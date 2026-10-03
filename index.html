@@ -7,24 +7,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              50: '#f0fdf4',
-              500: '#22c55e',
-              600: '#16a34a',
-              700: '#15803d',
-              900: '#14532d',
-            }
-          }
-        }
-      }
-    }
-  </script>
   <style>
     .custom-scrollbar::-webkit-scrollbar { width: 6px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
@@ -45,21 +27,25 @@
             <h1 class="font-extrabold text-lg tracking-tight text-white flex items-center gap-2">
               SkillSprint <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">PRO</span>
             </h1>
-            <p class="text-xs text-slate-400">Objectif Janvier 2027</p>
+            <p class="text-xs text-slate-400">Objectif Janvier 2027 · <span id="daysLeft"></span></p>
           </div>
         </div>
 
-        <!-- Header Actions -->
         <div class="flex items-center gap-3">
-          <button id="sosBtn" onclick="triggerSOS()" class="hidden bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-2">
+          <span id="statusPill" class="hidden sm:inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+            <span id="statusDot" class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+            <span id="statusText">Chargement…</span>
+          </span>
+
+          <button id="sosBtn" type="button" onclick="triggerSOS()" class="hidden bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 px-3 py-1.5 rounded-lg text-sm font-medium transition items-center gap-2">
             <i class="fa-solid fa-triangle-exclamation animate-pulse"></i>
             <span>SOS Support</span>
           </button>
-          
-          <div id="userProfileHeader" class="hidden flex items-center gap-2 pl-3 border-l border-slate-800">
+
+          <div id="userProfileHeader" class="hidden items-center gap-2 pl-3 border-l border-slate-800">
             <div id="userAvatar" class="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center font-bold text-xs uppercase text-white shadow"></div>
             <span id="userName" class="text-sm font-medium text-slate-200 hidden sm:inline"></span>
-            <button onclick="logout()" title="Déconnexion" class="text-slate-400 hover:text-slate-200 ml-1 p-1">
+            <button type="button" onclick="logout()" title="Déconnexion" aria-label="Déconnexion" class="text-slate-400 hover:text-slate-200 ml-1 p-1">
               <i class="fa-solid fa-right-from-bracket"></i>
             </button>
           </div>
@@ -69,8 +55,8 @@
   </header>
 
   <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-    
-    <!-- Registration / Join Banner (Visible if not registered) -->
+
+    <!-- Registration / Join Banner -->
     <section id="joinBanner" class="bg-gradient-to-r from-slate-900 via-emerald-950/40 to-slate-900 border border-emerald-500/30 rounded-2xl p-6 relative overflow-hidden shadow-2xl">
       <div class="max-w-2xl relative z-10 space-y-4">
         <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
@@ -78,11 +64,17 @@
         </span>
         <h2 class="text-2xl sm:text-3xl font-extrabold text-white">Rejoignez le Sprint de Groupe jusqu'en 2027 !</h2>
         <p class="text-slate-300 text-sm sm:text-base leading-relaxed">
-          Suivez vos progrès en temps réel, collaborez avec votre binôme d'étude et gardez une régularité irréprochable grâce au suivi collectif.
+          Suivez vos progrès, retrouvez votre binôme d'étude et gardez une régularité irréprochable grâce au suivi collectif.
         </p>
         <form id="joinForm" onsubmit="registerUser(event)" class="flex flex-col sm:flex-row gap-3 pt-2">
-          <input type="text" id="regName" required placeholder="Votre nom / pseudo" class="bg-slate-950/80 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 flex-1 text-sm">
-          <input type="text" id="regGoal" required placeholder="Ex: Développeur Fullstack / Data" class="bg-slate-950/80 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 flex-1 text-sm">
+          <div class="flex-1">
+            <label for="regName" class="sr-only">Votre nom ou pseudo</label>
+            <input type="text" id="regName" required maxlength="40" placeholder="Votre nom / pseudo" class="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 text-sm">
+          </div>
+          <div class="flex-1">
+            <label for="regGoal" class="sr-only">Votre objectif</label>
+            <input type="text" id="regGoal" required maxlength="80" placeholder="Ex: Développeur Fullstack / Data" class="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 text-sm">
+          </div>
           <button type="submit" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-6 py-2.5 rounded-xl transition shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 text-sm">
             <i class="fa-solid fa-user-plus"></i> Rejoindre le Groupe
           </button>
@@ -93,9 +85,9 @@
       </div>
     </section>
 
-    <!-- User Active Dashboard Section (Visible once joined) -->
+    <!-- User Active Dashboard -->
     <section id="userDashboard" class="hidden grid grid-cols-1 md:grid-cols-3 gap-4">
-      <!-- Card 1: Today Status -->
+      <!-- Card 1: Today -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between space-y-4">
         <div class="flex items-center justify-between">
           <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Émargement du Jour</span>
@@ -103,14 +95,14 @@
         </div>
         <div>
           <h3 class="text-xl font-bold text-white mb-1">Avez-vous travaillé aujourd'hui ?</h3>
-          <p class="text-xs text-slate-400">Validez votre journée pour maintenir votre série active !</p>
+          <p class="text-xs text-slate-400">Série actuelle : <span id="streakText" class="font-bold text-amber-400">0 jour</span></p>
         </div>
-        <button id="markWorkedBtn" onclick="toggleTodayWork()" class="w-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold py-2.5 rounded-xl transition flex items-center justify-center gap-2 text-sm">
+        <button id="markWorkedBtn" type="button" onclick="toggleTodayWork()" class="w-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold py-2.5 rounded-xl transition flex items-center justify-center gap-2 text-sm">
           <i class="fa-solid fa-check-double"></i> <span id="markBtnText">Marquer comme Travaillé</span>
         </button>
       </div>
 
-      <!-- Card 2: Jan 2027 Roadmap -->
+      <!-- Card 2: Roadmap -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between space-y-4">
         <div class="flex items-center justify-between">
           <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Cap Janvier 2027</span>
@@ -123,57 +115,56 @@
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <input type="range" id="overallSlider" min="0" max="100" value="0" oninput="updateProgress(this.value)" class="w-full accent-emerald-500 cursor-pointer">
+          <label for="overallSlider" class="sr-only">Ma progression</label>
+          <input type="range" id="overallSlider" min="0" max="100" value="0"
+                 oninput="previewProgress(this.value)" onchange="saveProgress(this.value)"
+                 class="w-full accent-emerald-500 cursor-pointer">
         </div>
       </div>
 
-      <!-- Card 3: Study Buddy & Sprint -->
+      <!-- Card 3: Buddy -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between space-y-4">
         <div class="flex items-center justify-between">
           <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Sprint Bi-Hebdomadaire</span>
           <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-teal-400 border border-slate-700">14 Jours</span>
         </div>
         <div>
-          <p class="text-xs text-slate-400 mb-1">Binôme d'Équipe Assigné</p>
+          <p class="text-xs text-slate-400 mb-1">Binôme d'Équipe</p>
           <div class="flex items-center gap-3 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
             <div class="w-8 h-8 rounded-full bg-teal-500/20 text-teal-300 flex items-center justify-center font-bold text-xs">
               <i class="fa-solid fa-user-group"></i>
             </div>
             <div class="overflow-hidden">
               <p id="buddyName" class="text-sm font-semibold text-slate-200 truncate">Recherche d'un binôme...</p>
-              <p class="text-[11px] text-slate-500">Statut: Connecté au groupe</p>
+              <p id="buddyGoal" class="text-[11px] text-slate-500 truncate"></p>
             </div>
           </div>
         </div>
-        <button onclick="sendKudosToGroup()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-medium py-2 rounded-xl transition text-xs flex items-center justify-center gap-2">
+        <button type="button" onclick="sendKudosToGroup()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-medium py-2 rounded-xl transition text-xs flex items-center justify-center gap-2">
           <i class="fa-solid fa-hands-clapping text-amber-400"></i> Envoyer des Kudos au Groupe
         </button>
       </div>
     </section>
 
-    <!-- Group Roster & Progress Grid -->
+    <!-- Members -->
     <section class="space-y-4">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
         <div>
           <h2 class="text-xl font-bold text-white flex items-center gap-2">
             <i class="fa-solid fa-users text-emerald-400"></i> Membres du Sprint Groupe
           </h2>
-          <p class="text-xs text-slate-400">Liste synchronisée en temps réel des apprenants enregistrés</p>
+          <p id="membersSubtitle" class="text-xs text-slate-400">Liste des apprenants enregistrés</p>
         </div>
         <div class="flex items-center gap-2 text-xs">
           <span class="flex items-center gap-1.5 px-3 py-1 bg-slate-900 border border-slate-800 rounded-lg text-slate-300">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
             <span id="memberCount">0 membre(s)</span>
           </span>
         </div>
       </div>
 
-      <!-- Member Grid Container -->
-      <div id="membersList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <!-- Rendered Member Cards will appear here -->
-      </div>
-      
-      <!-- Empty State -->
+      <div id="membersList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
       <div id="emptyMembersNotice" class="hidden bg-slate-900/40 border border-dashed border-slate-800 rounded-2xl p-8 text-center space-y-3">
         <i class="fa-solid fa-user-slash text-4xl text-slate-600"></i>
         <h3 class="text-base font-semibold text-slate-300">Aucun membre enregistré pour l'instant</h3>
@@ -182,343 +173,451 @@
     </section>
 
     <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4">
-      <!-- AI Assistant Panel -->
+      <!-- Coach (scripted) -->
       <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col h-96">
         <div class="flex items-center justify-between pb-3 border-b border-slate-800">
           <div class="flex items-center gap-2">
             <div class="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
               <i class="fa-solid fa-robot"></i>
             </div>
-            <h3 class="font-bold text-white text-sm">Coach Assistant IA - SkillSprint</h3>
+            <h3 class="font-bold text-white text-sm">Coach SkillSprint</h3>
           </div>
-          <span class="text-[11px] text-slate-500">Disponible 24/7</span>
+          <span class="text-[11px] text-slate-500">Réponses guidées (mode démo)</span>
         </div>
 
         <div id="chatMessages" class="flex-1 overflow-y-auto custom-scrollbar my-3 space-y-3 pr-2 text-xs">
           <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-slate-300 max-w-[85%]">
-            Bonjour ! Je suis votre coach IA pour la promotion 2027. Posez-moi vos questions sur le planning, la motivation ou l'organisation de vos études !
+            Bonjour ! Je suis le coach de la promotion 2027. Posez-moi vos questions sur le planning, la motivation ou l'organisation de vos études !
           </div>
         </div>
 
         <form onsubmit="sendAiMessage(event)" class="flex gap-2 pt-2 border-t border-slate-800">
-          <input type="text" id="aiInput" required placeholder="Posez une question à l'IA..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500">
-          <button type="submit" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 px-4 py-2 rounded-xl text-xs font-bold transition">
+          <label for="aiInput" class="sr-only">Votre question</label>
+          <input type="text" id="aiInput" required placeholder="Posez une question au coach..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500">
+          <button type="submit" aria-label="Envoyer" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 px-4 py-2 rounded-xl text-xs font-bold transition">
             <i class="fa-solid fa-paper-plane"></i>
           </button>
         </form>
       </div>
 
-      <!-- Activity Feed / SOS Alert Display -->
+      <!-- Feed -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col h-96">
         <div class="pb-3 border-b border-slate-800 flex items-center justify-between">
           <h3 class="font-bold text-white text-sm flex items-center gap-2">
             <i class="fa-solid fa-bullhorn text-amber-400"></i> Signalements & Kudos
           </h3>
-          <span class="text-[11px] text-slate-500">Direct</span>
+          <span id="feedMode" class="text-[11px] text-slate-500">Local</span>
         </div>
-
-        <div id="feedList" class="flex-1 overflow-y-auto custom-scrollbar my-3 space-y-2.5 pr-2">
-          <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80 text-xs text-slate-400 flex items-start gap-2">
-            <i class="fa-solid fa-info-circle text-teal-400 mt-0.5"></i>
-            <div>
-              <p class="font-medium text-slate-300">Bienvenue sur le tableau de bord !</p>
-              <p class="text-[10px] text-slate-500">Suivez vos objectifs et entraidez-vous.</p>
-            </div>
-          </div>
-        </div>
+        <div id="feedList" class="flex-1 overflow-y-auto custom-scrollbar my-3 space-y-2.5 pr-2"></div>
       </div>
     </section>
 
   </main>
 
   <!-- Modal SOS -->
-  <div id="sosModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+  <div id="sosModal" role="dialog" aria-modal="true" aria-labelledby="sosTitle" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
       <div class="flex items-center gap-3 text-rose-400">
         <i class="fa-solid fa-circle-exclamation text-2xl"></i>
-        <h3 class="text-lg font-bold text-white">Lancer un appel SOS Support</h3>
+        <h3 id="sosTitle" class="text-lg font-bold text-white">Lancer un appel SOS Support</h3>
       </div>
       <p class="text-xs text-slate-300">Un blocage technique ou un manque de motivation ? Envoyez une notification prioritaire au groupe.</p>
-      <textarea id="sosMessage" placeholder="Expliquez brièvement votre blocage..." class="w-full h-24 bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-rose-500"></textarea>
+      <label for="sosMessage" class="sr-only">Votre blocage</label>
+      <textarea id="sosMessage" maxlength="250" placeholder="Expliquez brièvement votre blocage..." class="w-full h-24 bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-rose-500"></textarea>
       <div class="flex gap-2 justify-end">
-        <button onclick="closeSosModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold">Annuler</button>
-        <button onclick="confirmSOS()" class="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs font-semibold">Envoyer l'Alerte</button>
+        <button type="button" onclick="closeSosModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold">Annuler</button>
+        <button type="button" onclick="confirmSOS()" class="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs font-semibold">Envoyer l'Alerte</button>
       </div>
     </div>
   </div>
 
   <script>
-    // System Local & Remote State Manager
-    const STORAGE_KEY_USER = "skillsprint_user_profile_v2";
-    const STORAGE_KEY_MEMBERS = "skillsprint_cached_members_v2";
+    // =====================================================
+    // CONFIG SUPABASE
+    // =====================================================
+    const SUPABASE_URL = 'https://eorzabxddxhxuepxmyrc.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_z-cFf2q7MIErLOmXcY8z6A_cQLLf6Sj'; // clé publique (jamais la service_role)
 
-    let currentUser = null;
+    const TARGET_DATE = new Date(2027, 0, 1); // 1er janvier 2027
+    const KEY_ID = 'skillsprint_my_id_v3';
+    const KEY_SESSION = 'skillsprint_session_v3';
+    const KEY_MEMBERS = 'skillsprint_cached_members_v3';
+    const KEY_FEED = 'skillsprint_cached_feed_v3';
+
+    const sb = (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase)
+      ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+      : null;
+
+    // Classes Tailwind complètes (compatibles avec un vrai build)
+    const FEED_STYLES = {
+      join:  { border: 'border-l-emerald-500', icon: 'text-emerald-400', glyph: 'fa-user-plus' },
+      kudos: { border: 'border-l-emerald-500', icon: 'text-emerald-400', glyph: 'fa-hands-clapping' },
+      work:  { border: 'border-l-amber-500',   icon: 'text-amber-400',   glyph: 'fa-bolt' },
+      sos:   { border: 'border-l-rose-500',    icon: 'text-rose-400',    glyph: 'fa-triangle-exclamation' }
+    };
+
+    let myId = null;
+    let loggedIn = false;
     let members = [];
+    let feed = [];
 
-    // Load initial cached data from localStorage immediately on script parse
-    function initLocalStorage() {
+    // ---------- Stockage sécurisé ----------
+    function lsGet(key, fallback) {
       try {
-        const cachedUser = localStorage.getItem(STORAGE_KEY_USER);
-        if (cachedUser) {
-          currentUser = JSON.parse(cachedUser);
-        }
+        const v = localStorage.getItem(key);
+        return v ? JSON.parse(v) : fallback;
+      } catch (e) { return fallback; }
+    }
+    function lsSet(key, value) {
+      try { localStorage.setItem(key, JSON.stringify(value)); }
+      catch (e) { console.warn('Stockage indisponible :', e); }
+    }
 
-        const cachedMembers = localStorage.getItem(STORAGE_KEY_MEMBERS);
-        if (cachedMembers) {
-          members = JSON.parse(cachedMembers);
-        }
-      } catch (e) {
-        console.error("Local storage error:", e);
+    // ---------- Utilitaires ----------
+    function escapeHtml(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    // Date locale (YYYY-MM-DD), pas UTC
+    function dateStr(d = new Date()) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function calcStreak(dates) {
+      const set = new Set(dates || []);
+      const d = new Date();
+      if (!set.has(dateStr(d))) d.setDate(d.getDate() - 1); // la série tient jusqu'à hier
+      let n = 0;
+      while (set.has(dateStr(d))) { n++; d.setDate(d.getDate() - 1); }
+      return n;
+    }
+
+    function daysLeft() {
+      const now = new Date();
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      return Math.max(0, Math.round((TARGET_DATE - start) / 86400000));
+    }
+
+    function newId() {
+      return 'usr_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    }
+
+    const me = () => members.find(m => m.id === myId) || null;
+
+    function setStatus(text, state) {
+      const colors = { ok: 'bg-emerald-400', local: 'bg-amber-400', error: 'bg-rose-400' };
+      document.getElementById('statusText').textContent = text;
+      document.getElementById('statusDot').className = 'w-1.5 h-1.5 rounded-full ' + (colors[state] || 'bg-slate-500');
+    }
+
+    // Binôme déterministe et symétrique : membres triés par date d'inscription, appariés 2 par 2
+    function findBuddy(userId) {
+      const sorted = [...members].sort((a, b) =>
+        String(a.joined_at).localeCompare(String(b.joined_at)) || a.id.localeCompare(b.id));
+      const i = sorted.findIndex(m => m.id === userId);
+      if (i < 0 || sorted.length < 2) return null;
+      if (i % 2 === 0) return sorted[i + 1] || sorted[i - 1] || null;
+      return sorted[i - 1];
+    }
+
+    // ---------- Données ----------
+    function upsertLocalMember(member) {
+      const idx = members.findIndex(m => m.id === member.id);
+      if (idx >= 0) members[idx] = member; else members.push(member);
+      lsSet(KEY_MEMBERS, members);
+    }
+
+    async function saveMember(member) {
+      upsertLocalMember(member);
+      if (!sb) return;
+      const { error } = await sb.from('members').upsert(member);
+      if (error) {
+        console.error(error);
+        setStatus('Erreur de synchronisation', 'error');
       }
     }
 
-    initLocalStorage();
-
-    // Save helpers
-    function saveUserLocally(user) {
-      currentUser = user;
-      localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(user));
+    async function addFeed(kind, message, memberName) {
+      const entry = { kind, message, member_name: memberName || '', created_at: new Date().toISOString() };
+      if (sb) {
+        const { data, error } = await sb.from('feed').insert(entry).select().single();
+        if (error) { console.error(error); setStatus('Erreur de synchronisation', 'error'); return; }
+        pushFeed(data);
+      } else {
+        entry.id = 'loc_' + Date.now() + Math.random().toString(36).slice(2, 5);
+        pushFeed(entry);
+      }
     }
 
-    function saveMembersLocally(mList) {
-      members = mList;
-      localStorage.setItem(STORAGE_KEY_MEMBERS, JSON.stringify(mList));
+    function pushFeed(entry) {
+      if (feed.some(f => f.id === entry.id)) return; // dédoublonnage (insert + realtime)
+      feed.unshift(entry);
+      feed = feed.slice(0, 40);
+      lsSet(KEY_FEED, feed);
+      renderFeed();
     }
 
+    async function loadRemote() {
+      const [mRes, fRes] = await Promise.all([
+        sb.from('members').select('*').order('joined_at', { ascending: true }),
+        sb.from('feed').select('*').order('created_at', { ascending: false }).limit(40)
+      ]);
+      if (mRes.error || fRes.error) throw (mRes.error || fRes.error);
+      members = mRes.data || [];
+      feed = fRes.data || [];
+      lsSet(KEY_MEMBERS, members);
+      lsSet(KEY_FEED, feed);
+    }
+
+    function subscribeRealtime() {
+      sb.channel('skillsprint-room')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, payload => {
+          if (payload.eventType === 'DELETE') {
+            members = members.filter(m => m.id !== payload.old.id);
+          } else {
+            const row = payload.new;
+            const idx = members.findIndex(m => m.id === row.id);
+            if (idx >= 0) members[idx] = row; else members.push(row);
+          }
+          lsSet(KEY_MEMBERS, members);
+          renderUI();
+        })
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'feed' }, payload => {
+          pushFeed(payload.new);
+        })
+        .subscribe(status => {
+          if (status === 'SUBSCRIBED') setStatus('Groupe en direct', 'ok');
+        });
+    }
+
+    // ---------- Rendu ----------
     function renderUI() {
-      // 1. Header Profile & Banners
       const joinBanner = document.getElementById('joinBanner');
       const userDashboard = document.getElementById('userDashboard');
       const userProfileHeader = document.getElementById('userProfileHeader');
       const sosBtn = document.getElementById('sosBtn');
+      const user = me();
+      const isIn = loggedIn && !!user;
 
-      if (currentUser) {
-        joinBanner.classList.add('hidden');
-        userDashboard.classList.remove('hidden');
-        userProfileHeader.classList.remove('hidden');
-        sosBtn.classList.remove('hidden');
+      joinBanner.classList.toggle('hidden', isIn);
+      userDashboard.classList.toggle('hidden', !isIn);
+      userProfileHeader.classList.toggle('hidden', !isIn);
+      userProfileHeader.classList.toggle('flex', isIn);
+      sosBtn.classList.toggle('hidden', !isIn);
+      sosBtn.classList.toggle('flex', isIn);
 
-        document.getElementById('userName').textContent = currentUser.name;
-        document.getElementById('userAvatar').textContent = currentUser.name.substring(0, 2);
-        document.getElementById('myGoalTitle').textContent = currentUser.goal || "Mon Objectif 2027";
-        
-        // Progress bar
-        const overallPercent = currentUser.progress || 0;
-        document.getElementById('myOverallPercent').textContent = `${overallPercent}%`;
-        document.getElementById('myOverallBar').style.width = `${overallPercent}%`;
-        document.getElementById('overallSlider').value = overallPercent;
+      const todayStr = dateStr();
 
-        // Today worked status
-        const todayStr = new Date().toISOString().split('T')[0];
-        const workedToday = currentUser.lastWorkedDate === todayStr;
+      if (isIn) {
+        document.getElementById('userName').textContent = user.name;
+        document.getElementById('userAvatar').textContent = user.name.slice(0, 2);
+        document.getElementById('myGoalTitle').textContent = user.goal || 'Mon Objectif 2027';
+
+        const pct = user.progress || 0;
+        document.getElementById('myOverallPercent').textContent = `${pct}%`;
+        document.getElementById('myOverallBar').style.width = `${pct}%`;
+        document.getElementById('overallSlider').value = pct;
+
+        const workedToday = (user.work_dates || []).includes(todayStr);
+        const streak = calcStreak(user.work_dates);
         const todayBadge = document.getElementById('todayBadge');
-        const markBtnText = document.getElementById('markBtnText');
-        
-        if (workedToday) {
-          todayBadge.textContent = "Validé";
-          todayBadge.className = "text-xs px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
-          markBtnText.textContent = "Aujourd'hui Fait !";
-        } else {
-          todayBadge.textContent = "Non validé";
-          todayBadge.className = "text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-400 border border-slate-700";
-          markBtnText.textContent = "Marquer comme Travaillé";
-        }
+        todayBadge.textContent = workedToday ? 'Validé' : 'Non validé';
+        todayBadge.className = workedToday
+          ? 'text-xs px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+          : 'text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-400 border border-slate-700';
+        document.getElementById('markBtnText').textContent = workedToday ? "Aujourd'hui Fait !" : 'Marquer comme Travaillé';
+        document.getElementById('streakText').textContent = `${streak} jour${streak > 1 ? 's' : ''}`;
 
-        // Buddy assignment calculation
-        const otherMembers = members.filter(m => m.id !== currentUser.id);
-        if (otherMembers.length > 0) {
-          const buddy = otherMembers[Math.abs(hashString(currentUser.id)) % otherMembers.length];
-          document.getElementById('buddyName').textContent = buddy.name;
-        } else {
-          document.getElementById('buddyName').textContent = "En attente d'autres membres";
-        }
-
-      } else {
-        joinBanner.classList.remove('hidden');
-        userDashboard.classList.add('hidden');
-        userProfileHeader.classList.add('hidden');
-        sosBtn.classList.add('hidden');
+        const buddy = findBuddy(user.id);
+        document.getElementById('buddyName').textContent = buddy ? buddy.name : "En attente d'autres membres";
+        document.getElementById('buddyGoal').textContent = buddy ? buddy.goal : '';
       }
 
-      // 2. Render Members Grid
+      // Grille des membres
       const membersList = document.getElementById('membersList');
       const emptyNotice = document.getElementById('emptyMembersNotice');
-      const countSpan = document.getElementById('memberCount');
-
-      countSpan.textContent = `${members.length} membre(s)`;
+      document.getElementById('memberCount').textContent = `${members.length} membre(s)`;
+      document.getElementById('membersSubtitle').textContent = sb
+        ? 'Liste synchronisée en direct entre tous les apprenants'
+        : 'Mode local : seuls les profils de cet appareil apparaissent';
 
       if (members.length === 0) {
         membersList.innerHTML = '';
         emptyNotice.classList.remove('hidden');
-      } else {
-        emptyNotice.classList.add('hidden');
-        
-        const todayStr = new Date().toISOString().split('T')[0];
+        return;
+      }
+      emptyNotice.classList.add('hidden');
 
-        membersList.innerHTML = members.map(m => {
-          const isWorked = m.lastWorkedDate === todayStr;
-          const isCurrent = currentUser && currentUser.id === m.id;
-
-          return `
-            <div class="bg-slate-900 border ${isCurrent ? 'border-emerald-500/50 bg-emerald-950/10' : 'border-slate-800'} rounded-2xl p-4 flex flex-col justify-between space-y-3 shadow-md relative overflow-hidden">
-              <div class="flex items-start justify-between gap-2">
-                <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-sm text-emerald-400 uppercase">
-                    ${m.name.substring(0,2)}
-                  </div>
-                  <div>
-                    <h4 class="font-bold text-slate-100 text-sm flex items-center gap-1.5">
-                      ${escapeHtml(m.name)}
-                      ${isCurrent ? '<span class="text-[10px] px-1.5 py-0.2 bg-emerald-500/20 text-emerald-400 rounded">Moi</span>' : ''}
-                    </h4>
-                    <p class="text-xs text-slate-400 truncate max-w-[160px]">${escapeHtml(m.goal)}</p>
-                  </div>
+      membersList.innerHTML = members.map(m => {
+        const isWorked = (m.work_dates || []).includes(todayStr);
+        const isCurrent = isIn && myId === m.id;
+        const streak = calcStreak(m.work_dates);
+        const pct = Math.min(100, Math.max(0, parseInt(m.progress, 10) || 0));
+        return `
+          <div class="bg-slate-900 border ${isCurrent ? 'border-emerald-500/50 bg-emerald-950/10' : 'border-slate-800'} rounded-2xl p-4 flex flex-col justify-between space-y-3 shadow-md relative overflow-hidden">
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-sm text-emerald-400 uppercase">
+                  ${escapeHtml(m.name.slice(0, 2))}
                 </div>
-                <span class="text-[11px] px-2 py-0.5 rounded-full font-medium ${isWorked ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-500'}">
-                  ${isWorked ? 'Actif aujourd\'hui' : 'Inactif'}
-                </span>
+                <div>
+                  <h4 class="font-bold text-slate-100 text-sm flex items-center gap-1.5">
+                    ${escapeHtml(m.name)}
+                    ${isCurrent ? '<span class="text-[10px] px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 rounded">Moi</span>' : ''}
+                  </h4>
+                  <p class="text-xs text-slate-400 truncate max-w-[160px]">${escapeHtml(m.goal)}</p>
+                </div>
               </div>
-
-              <div>
-                <div class="flex justify-between text-xs mb-1">
-                  <span class="text-slate-400">Progression 2027</span>
-                  <span class="font-bold text-emerald-400">${m.progress || 0}%</span>
-                </div>
-                <div class="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/80">
-                  <div class="bg-emerald-500 h-full rounded-full" style="width: ${m.progress || 0}%"></div>
-                </div>
+              <span class="text-[11px] px-2 py-0.5 rounded-full font-medium ${isWorked ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-500'}">
+                ${isWorked ? "Actif aujourd'hui" : 'Inactif'}
+              </span>
+            </div>
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-400">Progression 2027${streak > 0 ? ` · <span class="text-amber-400">🔥 ${streak}j</span>` : ''}</span>
+                <span class="font-bold text-emerald-400">${pct}%</span>
+              </div>
+              <div class="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/80">
+                <div class="bg-emerald-500 h-full rounded-full" style="width: ${pct}%"></div>
               </div>
             </div>
-          `;
-        }).join('');
-      }
+          </div>`;
+      }).join('');
     }
 
-    // Helper to safely format text
-    function escapeHtml(str) {
-      return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    function renderFeed() {
+      const list = document.getElementById('feedList');
+      const items = feed.map(f => {
+        const s = FEED_STYLES[f.kind] || FEED_STYLES.join;
+        const time = new Date(f.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        return `
+          <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800 border-l-2 ${s.border} text-xs text-slate-300 flex items-start gap-2">
+            <i class="fa-solid ${s.glyph} ${s.icon} mt-0.5"></i>
+            <div>
+              <p class="font-medium text-slate-200">${escapeHtml(f.message)}</p>
+              <p class="text-[10px] text-slate-500">${time}</p>
+            </div>
+          </div>`;
+      }).join('');
+
+      list.innerHTML = items + `
+        <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80 text-xs text-slate-400 flex items-start gap-2">
+          <i class="fa-solid fa-info-circle text-teal-400 mt-0.5"></i>
+          <div>
+            <p class="font-medium text-slate-300">Bienvenue sur le tableau de bord !</p>
+            <p class="text-[10px] text-slate-500">Suivez vos objectifs et entraidez-vous.</p>
+          </div>
+        </div>`;
+      document.getElementById('feedMode').textContent = sb ? 'Direct' : 'Local';
     }
 
-    function hashString(str) {
-      let hash = 0;
-      for (let i = 0; i < str.length; i++) {
-        hash = (hash << 5) - hash + str.charCodeAt(i);
-        hash |= 0;
-      }
-      return hash;
-    }
-
-    function registerUser(e) {
+    // ---------- Actions ----------
+    async function registerUser(e) {
       e.preventDefault();
-      const name = document.getElementById('regName').value.trim();
-      const goal = document.getElementById('regGoal').value.trim();
-
+      const name = document.getElementById('regName').value.trim().slice(0, 40);
+      const goal = document.getElementById('regGoal').value.trim().slice(0, 80);
       if (!name || !goal) return;
 
-      const newUser = {
-        id: currentUser ? currentUser.id : 'usr_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
-        name: name,
-        goal: goal,
-        progress: 0,
-        lastWorkedDate: null,
-        joinedAt: new Date().toISOString()
+      const existing = members.find(m => m.id === myId);
+      const id = myId || newId(); // réutilise l'id → pas de doublon après déconnexion
+      const member = {
+        id, name, goal,
+        progress: existing ? existing.progress : 0,
+        work_dates: existing ? existing.work_dates : [],
+        joined_at: existing ? existing.joined_at : new Date().toISOString()
       };
 
-      saveUserLocally(newUser);
+      myId = id;
+      loggedIn = true;
+      lsSet(KEY_ID, id);
+      lsSet(KEY_SESSION, true);
 
-      // Merge user into local members list immediately
-      const existingIdx = members.findIndex(m => m.id === newUser.id);
-      if (existingIdx >= 0) {
-        members[existingIdx] = newUser;
-      } else {
-        members.push(newUser);
-      }
-      saveMembersLocally([...members]);
-
+      await saveMember(member);
       renderUI();
-      addFeedNotice(`🎉 ${newUser.name} a rejoint le sprint groupe !`, 'emerald');
+      if (!existing) addFeed('join', `🎉 ${name} a rejoint le sprint groupe !`, name);
     }
 
-    function toggleTodayWork() {
-      if (!currentUser) return;
+    async function toggleTodayWork() {
+      const user = me();
+      if (!user) return;
+      const today = dateStr();
+      let dates = [...(user.work_dates || [])];
 
-      const todayStr = new Date().toISOString().split('T')[0];
-      if (currentUser.lastWorkedDate === todayStr) {
-        currentUser.lastWorkedDate = null;
+      if (dates.includes(today)) {
+        dates = dates.filter(d => d !== today);
       } else {
-        currentUser.lastWorkedDate = todayStr;
-        addFeedNotice(`⚡ ${currentUser.name} a validé son travail pour aujourd'hui !`, 'amber');
+        dates.push(today);
+        addFeed('work', `⚡ ${user.name} a validé son travail pour aujourd'hui !`, user.name);
       }
-
-      saveUserLocally(currentUser);
-      
-      const idx = members.findIndex(m => m.id === currentUser.id);
-      if (idx >= 0) {
-        members[idx] = currentUser;
-        saveMembersLocally([...members]);
-      }
-
+      await saveMember({ ...user, work_dates: dates });
       renderUI();
     }
 
-    function updateProgress(val) {
-      if (!currentUser) return;
-      currentUser.progress = parseInt(val, 10);
-      saveUserLocally(currentUser);
+    // Aperçu pendant le glissement (sans écriture)
+    function previewProgress(val) {
+      document.getElementById('myOverallPercent').textContent = `${val}%`;
+      document.getElementById('myOverallBar').style.width = `${val}%`;
+    }
 
-      const idx = members.findIndex(m => m.id === currentUser.id);
-      if (idx >= 0) {
-        members[idx] = currentUser;
-        saveMembersLocally([...members]);
-      }
-
+    // Sauvegarde au relâchement du curseur
+    async function saveProgress(val) {
+      const user = me();
+      if (!user) return;
+      await saveMember({ ...user, progress: parseInt(val, 10) || 0 });
       renderUI();
     }
 
     function logout() {
-      localStorage.removeItem(STORAGE_KEY_USER);
-      currentUser = null;
+      // On garde l'id et le profil : se reconnecter réutilise le même membre
+      const user = me();
+      loggedIn = false;
+      lsSet(KEY_SESSION, false);
+      if (user) {
+        document.getElementById('regName').value = user.name;
+        document.getElementById('regGoal').value = user.goal;
+      }
       renderUI();
     }
 
-    // Feed / SOS Notifications
-    function addFeedNotice(msg, color = 'emerald') {
-      const feed = document.getElementById('feedList');
-      const div = document.createElement('div');
-      div.className = `bg-slate-950/80 p-2.5 rounded-xl border border-slate-800 text-xs text-slate-300 flex items-start gap-2 border-l-2 border-l-${color}-500`;
-      div.innerHTML = `
-        <i class="fa-solid fa-bell text-${color}-400 mt-0.5"></i>
-        <div>
-          <p class="font-medium text-slate-200">${escapeHtml(msg)}</p>
-          <p class="text-[10px] text-slate-500">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
-        </div>
-      `;
-      feed.prepend(div);
-    }
-
     function sendKudosToGroup() {
-      if (!currentUser) return;
-      addFeedNotice(`🙌 Kudos envoyés par ${currentUser.name} ! Bon courage à tous !`, 'emerald');
+      const user = me();
+      if (!user) return;
+      addFeed('kudos', `🙌 Kudos envoyés par ${user.name} ! Bon courage à tous !`, user.name);
     }
 
+    // ---------- SOS ----------
     function triggerSOS() {
-      document.getElementById('sosModal').classList.remove('hidden');
-      document.getElementById('sosModal').classList.add('flex');
+      const modal = document.getElementById('sosModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      document.getElementById('sosMessage').focus();
     }
 
     function closeSosModal() {
-      document.getElementById('sosModal').classList.add('hidden');
-      document.getElementById('sosModal').classList.remove('flex');
+      const modal = document.getElementById('sosModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
     }
 
     function confirmSOS() {
+      const user = me();
       const msg = document.getElementById('sosMessage').value.trim();
-      if (!msg) return;
-      addFeedNotice(`🚨 SOS de ${currentUser.name}: "${msg}"`, 'rose');
+      if (!user || !msg) return;
+      addFeed('sos', `🚨 SOS de ${user.name} : "${msg}"`, user.name);
       closeSosModal();
       document.getElementById('sosMessage').value = '';
     }
 
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeSosModal();
+    });
+
+    // ---------- Coach (réponses guidées, pas de vraie IA) ----------
     function sendAiMessage(e) {
       e.preventDefault();
       const input = document.getElementById('aiInput');
@@ -526,38 +625,67 @@
       if (!txt) return;
 
       const chat = document.getElementById('chatMessages');
-
-      // User Msg
       const uDiv = document.createElement('div');
-      uDiv.className = "bg-emerald-600/20 text-emerald-200 p-3 rounded-xl border border-emerald-500/30 ml-auto max-w-[85%]";
+      uDiv.className = 'bg-emerald-600/20 text-emerald-200 p-3 rounded-xl border border-emerald-500/30 ml-auto max-w-[85%]';
       uDiv.textContent = txt;
       chat.appendChild(uDiv);
-
       input.value = '';
       chat.scrollTop = chat.scrollHeight;
 
-      // Simulated Response
       setTimeout(() => {
         const aiDiv = document.createElement('div');
-        aiDiv.className = "bg-slate-950 p-3 rounded-xl border border-slate-800 text-slate-300 max-w-[85%]";
-        
-        let reply = "Excellente question ! Pour atteindre l'objectif Janvier 2027, restez constant chaque jour et validez vos sessions de travail régulières.";
-        if (txt.toLowerCase().includes('motivation')) {
-          reply = "La motivation vient en pratiquant ! Même 20 minutes aujourd'hui feront la différence sur 2 ans.";
-        } else if (txt.toLowerCase().includes('sprint') || txt.toLowerCase().includes('planning')) {
-          reply = "Chaque sprint bi-hebdomadaire vous permet de valider des micro-objectifs. Découpez vos tâches pour ne pas procrastiner.";
+        aiDiv.className = 'bg-slate-950 p-3 rounded-xl border border-slate-800 text-slate-300 max-w-[85%]';
+        const low = txt.toLowerCase();
+        const left = daysLeft();
+        let reply = `Bonne question ! Il reste ${left} jours avant janvier 2027 : restez constant et validez vos sessions chaque jour.`;
+        if (low.includes('motivation')) {
+          reply = "La motivation vient en pratiquant ! Même 20 minutes aujourd'hui comptent, et votre série vous le rappellera demain.";
+        } else if (low.includes('sprint') || low.includes('planning')) {
+          reply = 'Chaque sprint de 14 jours sert à valider des micro-objectifs. Découpez vos tâches en blocs de 25 à 45 minutes pour éviter de procrastiner.';
         }
-
         aiDiv.textContent = reply;
         chat.appendChild(aiDiv);
         chat.scrollTop = chat.scrollHeight;
       }, 600);
     }
 
-    // Initial boot logic
-    window.onload = function() {
+    // ---------- Démarrage ----------
+    async function boot() {
+      myId = lsGet(KEY_ID, null);
+      loggedIn = !!lsGet(KEY_SESSION, false);
+      members = lsGet(KEY_MEMBERS, []);
+      feed = lsGet(KEY_FEED, []);
+      document.getElementById('daysLeft').textContent = `${daysLeft()} jours restants`;
+
+      const user = me();
+      if (!loggedIn && user) {
+        document.getElementById('regName').value = user.name;
+        document.getElementById('regGoal').value = user.goal;
+      }
+
       renderUI();
-    };
+      renderFeed();
+
+      if (!sb) {
+        setStatus('Mode local', 'local');
+        return;
+      }
+      try {
+        await loadRemote();
+        subscribeRealtime();
+        setStatus('Groupe en direct', 'ok');
+        // Si mon profil n'existe pas encore côté serveur, on le pousse
+        const mine = me();
+        if (loggedIn && mine) await sb.from('members').upsert(mine);
+      } catch (err) {
+        console.error(err);
+        setStatus('Hors ligne (cache local)', 'error');
+      }
+      renderUI();
+      renderFeed();
+    }
+
+    window.addEventListener('load', boot);
   </script>
 </body>
 </html>
