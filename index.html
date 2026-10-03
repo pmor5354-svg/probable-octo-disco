@@ -3,12 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SkillSprint Pro - Objectif Janvier 2027</title>
+  <title>SkillSprint Pro - Horizon Janvier 2027</title>
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
     .custom-scrollbar::-webkit-scrollbar {
@@ -110,7 +112,7 @@
             </h2>
             <p class="text-xs text-slate-400 mt-1">Suivi du travail du jour & barres de progression individuelles</p>
           </div>
-          <button onclick="renderMembers()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300">
+          <button onclick="syncWithSupabase()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300" title="Actualiser la synchronisation">
             <i data-lucide="refresh-cw" class="w-4 h-4"></i>
           </button>
         </div>
@@ -207,9 +209,9 @@
           <div>
             <div class="flex justify-between text-xs mb-2">
               <span class="text-slate-300 font-medium">Progression du Sprint 14J en cours</span>
-              <span id="mySprintVal" class="font-extrabold text-cyan-400">60%</span>
+              <span id="mySprintVal" class="font-extrabold text-cyan-400">70%</span>
             </div>
-            <input type="range" id="sprintRange" min="0" max="100" value="60" oninput="updateMySprintProgress(this.value)" class="w-full accent-cyan-500 h-2 bg-slate-800 rounded-lg cursor-pointer">
+            <input type="range" id="sprintRange" min="0" max="100" value="70" oninput="updateMySprintProgress(this.value)" class="w-full accent-cyan-500 h-2 bg-slate-800 rounded-lg cursor-pointer">
           </div>
 
           <!-- Activer/Désactiver S.O.S -->
@@ -312,9 +314,18 @@
     </div>
   </div>
 
-  <!-- JavaScript Logique -->
+  <!-- JavaScript Logique & Synchronisation Supabase -->
   <script>
-    // Données réelles des membres avec suivi quotidien et progressions
+    // Configuration Supabase avec votre clé publique (publishable)
+    const SUPABASE_URL = 'https://z-cff2q7mierlomxcy8z6a-cqllf6sj.supabase.co';
+    const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_z-cFf2q7MIErLOmXcY8z6A_cQLLf6Sj';
+
+    let supabaseClient = null;
+    if (typeof supabase !== 'undefined' && SUPABASE_URL.indexOf('z-cff2q7') === -1) {
+      supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    }
+
+    // Données locales initiales (fallback si la BDD est hors-ligne)
     let membersData = [
       {
         id: "m1",
@@ -372,21 +383,71 @@
 
     let currentUserId = "m1"; // Utilisateur actif
 
-    // Initialisation
+    // Initialisation globale
     document.addEventListener("DOMContentLoaded", () => {
       lucide.createIcons();
       renderMembers();
       renderCharts();
       renderAttendance();
       updateMyPanel();
+      syncWithSupabase();
     });
+
+    // Synchronisation transparente avec Supabase
+    async function syncWithSupabase() {
+      if (!supabaseClient) return;
+      try {
+        const { data, error } = await supabaseClient.from('members').select('*');
+        if (data && data.length > 0 && !error) {
+          membersData = data.map(m => ({
+            ...m,
+            workedToday: m.workedToday ?? m.workedtoday ?? false,
+            sprintProgress: m.sprintProgress ?? m.sprintprogress ?? 0,
+            sosMsg: m.sosMsg ?? m.sosmsg ?? '',
+            lastReport: m.lastReport ?? m.lastreport ?? 'Aujourd\'hui',
+            badges: Array.isArray(m.badges) ? m.badges : ["Membre 🚀"]
+          }));
+          renderMembers();
+          renderCharts();
+          renderAttendance();
+          updateMyPanel();
+        }
+      } catch (err) {
+        console.log("Mode local actif:", err);
+      }
+    }
+
+    async function saveMemberToSupabase(member) {
+      if (!supabaseClient) return;
+      try {
+        await supabaseClient.from('members').upsert({
+          id: member.id,
+          name: member.name,
+          avatar: member.avatar,
+          skill: member.skill,
+          target: member.target,
+          workedToday: member.workedToday,
+          progress: member.progress,
+          sprintProgress: member.sprintProgress,
+          streak: member.streak,
+          sos: member.sos,
+          sosMsg: member.sosMsg || '',
+          kudos: member.kudos,
+          buddy: member.buddy,
+          lastReport: member.lastReport,
+          attendance: member.attendance
+        });
+      } catch (err) {
+        console.error("Erreur de sauvegarde Supabase:", err);
+      }
+    }
 
     function toggleModal(id) {
       const modal = document.getElementById(id);
       modal.classList.toggle("hidden");
     }
 
-    // Afficher les cartes membres avec statut d'activité du jour
+    // Affichage des cartes membres
     function renderMembers() {
       const grid = document.getElementById("membersGrid");
       grid.innerHTML = "";
@@ -410,7 +471,7 @@
               </div>
             </div>
 
-            <!-- Badge statut travail du jour -->
+            <!-- Statut travail du jour -->
             <div class="mb-3 flex items-center gap-2">
               <span class="text-[11px] text-slate-400">Aujourd'hui :</span>
               ${m.workedToday ? 
@@ -429,7 +490,7 @@
               </div>
             ` : ''}
 
-            <!-- Barre 1 : Progression Globale (2027) -->
+            <!-- Progression Globale (2027) -->
             <div class="mt-3">
               <div class="flex justify-between text-xs mb-1">
                 <span class="text-slate-400">Progression Globale (2027)</span>
@@ -440,7 +501,7 @@
               </div>
             </div>
 
-            <!-- Barre 2 : Sprint 14 jours -->
+            <!-- Sprint 14 jours -->
             <div class="mt-2">
               <div class="flex justify-between text-xs mb-1">
                 <span class="text-slate-400">Sprint 14J Actuel</span>
@@ -453,14 +514,14 @@
 
           </div>
 
-          <!-- Footer carte (Badges, Kudos, Série) -->
+          <!-- Footer carte -->
           <div class="mt-4 pt-3 border-t border-slate-900 flex justify-between items-center text-xs">
             <div class="flex items-center gap-1 text-orange-400 font-semibold" title="Sprints validés d'affilée">
               🔥 ${m.streak} Sprints
             </div>
 
             <div class="flex gap-1">
-              ${m.badges.map(b => `<span class="bg-slate-800 text-[10px] text-slate-300 px-1.5 py-0.5 rounded">${b}</span>`).join('')}
+              ${(m.badges || []).map(b => `<span class="bg-slate-800 text-[10px] text-slate-300 px-1.5 py-0.5 rounded">${b}</span>`).join('')}
             </div>
 
             <button onclick="sendKudos('${m.id}')" class="bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 px-2 py-1 rounded-lg flex items-center gap-1 transition-all">
@@ -473,7 +534,7 @@
       });
     }
 
-    // Graphiques de progression
+    // Graphiques comparatifs
     function renderCharts() {
       const container = document.getElementById("chartsContainer");
       container.innerHTML = "";
@@ -497,7 +558,7 @@
       });
     }
 
-    // Tableau d'assiduité des comptes-rendus
+    // Tableau d'assiduité
     function renderAttendance() {
       const tbody = document.getElementById("attendanceTableBody");
       tbody.innerHTML = "";
@@ -534,7 +595,6 @@
       document.getElementById("mySprintVal").innerText = me.sprintProgress + "%";
       document.getElementById("sprintRange").value = me.sprintProgress;
 
-      // Statut "A travaillé aujourd'hui"
       const badge = document.getElementById("myWorkedTodayBadge");
       const toggleBtn = document.getElementById("toggleWorkedBtn");
 
@@ -550,7 +610,6 @@
         toggleBtn.innerHTML = "🚀 Marquer comme travaillé aujourd'hui";
       }
 
-      // SOS
       const sosBtn = document.getElementById("sosToggleBtn");
       if (me.sos) {
         sosBtn.className = "px-3 py-1.5 rounded-lg text-xs font-bold bg-red-500 text-white shadow-lg shadow-red-500/30";
@@ -563,7 +622,6 @@
       document.getElementById("myBuddyName").innerText = me.buddy || "Aucun";
     }
 
-    // Commuter le statut "A travaillé aujourd'hui"
     function toggleWorkedToday() {
       const me = membersData.find(m => m.id === currentUserId);
       if (me) {
@@ -571,10 +629,10 @@
         updateMyPanel();
         renderMembers();
         renderAttendance();
+        saveMemberToSupabase(me);
       }
     }
 
-    // Mise à jour de la progression globale
     function updateMyProgress(val) {
       const me = membersData.find(m => m.id === currentUserId);
       if (me) {
@@ -582,10 +640,10 @@
         document.getElementById("myProgressVal").innerText = val + "%";
         renderMembers();
         renderCharts();
+        saveMemberToSupabase(me);
       }
     }
 
-    // Mise à jour de la progression du sprint 14J
     function updateMySprintProgress(val) {
       const me = membersData.find(m => m.id === currentUserId);
       if (me) {
@@ -593,6 +651,7 @@
         document.getElementById("mySprintVal").innerText = val + "%";
         renderMembers();
         renderCharts();
+        saveMemberToSupabase(me);
       }
     }
 
@@ -606,6 +665,7 @@
         }
         updateMyPanel();
         renderMembers();
+        saveMemberToSupabase(me);
       }
     }
 
@@ -614,6 +674,7 @@
       if (target) {
         target.kudos++;
         renderMembers();
+        saveMemberToSupabase(target);
       }
     }
 
@@ -626,7 +687,7 @@
       const newMember = {
         id: "m" + (membersData.length + 1),
         name: name,
-        avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${name}`,
+        avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}`,
         skill: skill,
         target: target,
         workedToday: true,
@@ -649,9 +710,9 @@
       renderCharts();
       renderAttendance();
       updateMyPanel();
+      saveMemberToSupabase(newMember);
     }
 
-    // Navigation Assistant IA
     function switchAITab(tab) {
       const btnPlan = document.getElementById("tabPlanBtn");
       const btnSummary = document.getElementById("tabSummaryBtn");
@@ -671,7 +732,6 @@
       }
     }
 
-    // Simulation de réponses IA
     function generateAIPlan() {
       const topic = document.getElementById("aiTopicInput").value || "Génération de Leads & Marketing";
       const out = document.getElementById("aiOutput");
@@ -693,7 +753,7 @@
       out.innerHTML = `<p class="text-indigo-400 font-bold mb-2">📋 Ordre du Jour - Session Bimensuelle</p>
       <div class="text-[11px] space-y-1.5">
         <p>• <strong>Tour de table (10 min) :</strong> Présentation des résultats des 14 derniers jours.</p>
-        <p>• <strong>Résolution S.O.S (15 min) :</strong> Entraide sur le blocage de Moussa K. (Prospection).</p>
+        <p>• <strong>Résolution S.O.S (15 min) :</strong> Entraide sur les blocages signalés.</p>
         <p>• <strong>Objectifs suivants :</strong> Définition des engagements pour les 2 prochaines semaines.</p>
       </div>`;
     }
