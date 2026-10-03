@@ -1,735 +1,563 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" class="h-full bg-slate-900 text-slate-100">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SkillSprint Pro - Horizon Janvier 2027</title>
-
-  <!-- Tailwind CSS CDN -->
+  <title>SkillSprint Pro - Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Lucide Icons CDN -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- Supabase JS Client -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+              900: '#14532d',
+            }
+          }
+        }
+      }
+    }
+  </script>
   <style>
-    .custom-scrollbar::-webkit-scrollbar {
-      width: 6px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-track {
-      background: #0f172a;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: #1e293b;
-      border-radius: 4px;
-    }
-    .pulse-sos {
-      animation: pulse-red 1.5s infinite;
-    }
-    @keyframes pulse-red {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-      50% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-    }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(51, 65, 85, 0.8); border-radius: 9999px; }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 font-sans min-h-screen pb-12">
+<body class="h-full flex flex-col font-sans antialiased bg-slate-950 text-slate-100 overflow-x-hidden">
 
-  <!-- Header / Navigation -->
-  <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto px-4 py-4 flex flex-wrap justify-between items-center gap-4">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center font-black text-slate-950 text-xl">
-          🚀
-        </div>
-        <div>
-          <h1 class="text-xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-            SkillSprint Pro
-          </h1>
-          <p class="text-xs text-slate-400">Objectif final : <span class="text-emerald-400 font-bold">Janvier 2027</span> • Bilan tous les 14 jours</p>
-        </div>
-      </div>
-
-      <!-- Informations de Groupe & Inscription -->
-      <div class="flex items-center gap-4">
-        <!-- Badge Compte à rebours / Sprint -->
-        <div class="bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-lg flex items-center gap-3">
-          <div class="flex items-center gap-1.5">
-            <span class="text-emerald-400 text-sm">🗓️</span>
-            <div>
-              <div class="text-[10px] text-slate-400 uppercase font-semibold">Sprint Actuel</div>
-              <div class="text-xs font-bold text-slate-200">Session #1 (Cycle 14J)</div>
-            </div>
+  <!-- Top Navigation Bar -->
+  <header class="bg-slate-900/80 backdrop-blur border-b border-slate-800 sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 font-bold text-xl shadow-lg shadow-emerald-500/20">
+            <i class="fa-solid font-bold fa-bolt"></i>
           </div>
-          <div class="border-l border-slate-800 h-6"></div>
-          <div class="flex items-center gap-1.5">
-            <span class="text-orange-500 text-sm">🔥</span>
-            <div>
-              <div class="text-[10px] text-slate-400 uppercase font-semibold">Membres Actifs</div>
-              <div class="text-xs font-bold text-orange-400" id="activeMembersCount">0 Member</div>
-            </div>
+          <div>
+            <h1 class="font-extrabold text-lg tracking-tight text-white flex items-center gap-2">
+              SkillSprint <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">PRO</span>
+            </h1>
+            <p class="text-xs text-slate-400">Objectif Janvier 2027</p>
           </div>
         </div>
 
-        <div id="authActions">
-          <button onclick="toggleModal('registerModal')" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-4 py-2 rounded-lg text-xs transition-all shadow-lg shadow-emerald-500/20">
-            📝 Rejoindre le Groupe
+        <!-- Header Actions -->
+        <div class="flex items-center gap-3">
+          <button id="sosBtn" onclick="triggerSOS()" class="hidden bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-2">
+            <i class="fa-solid fa-triangle-exclamation animate-pulse"></i>
+            <span>SOS Support</span>
           </button>
+          
+          <div id="userProfileHeader" class="hidden flex items-center gap-2 pl-3 border-l border-slate-800">
+            <div id="userAvatar" class="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center font-bold text-xs uppercase text-white shadow"></div>
+            <span id="userName" class="text-sm font-medium text-slate-200 hidden sm:inline"></span>
+            <button onclick="logout()" title="Déconnexion" class="text-slate-400 hover:text-slate-200 ml-1 p-1">
+              <i class="fa-solid fa-right-from-bracket"></i>
+            </button>
+          </div>
         </div>
       </div>
     </div>
   </header>
 
-  <!-- Container Principal -->
-  <main class="max-w-7xl mx-auto px-4 mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-    <!-- COLONNE GAUCHE (2 cols) : Membres & Suivi de Progression -->
-    <div class="lg:col-span-2 space-y-8">
-
-      <!-- Banner Echéance Janvier 2027 -->
-      <section class="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-indigo-500/30 rounded-2xl p-5 flex flex-wrap justify-between items-center gap-4">
-        <div class="flex items-center gap-4">
-          <div class="p-3 bg-indigo-500/10 rounded-xl text-indigo-400 border border-indigo-500/20">
-            <i data-lucide="target" class="w-6 h-6"></i>
-          </div>
-          <div>
-            <h2 class="font-bold text-slate-100 text-sm md:text-base">Programme Longue Durée • Horizon Janvier 2027</h2>
-            <p class="text-xs text-slate-400 mt-0.5">Validez votre session quotidienne & présentez votre bilan au groupe tous les 14 jours.</p>
-          </div>
-        </div>
-        <div class="bg-slate-950 border border-indigo-500/30 px-4 py-2 rounded-xl text-center">
-          <div class="text-[10px] text-indigo-300 uppercase font-bold tracking-wider">Échéance finale</div>
-          <div class="text-sm font-extrabold text-indigo-400">Janvier 2027</div>
-        </div>
-      </section>
-
-      <!-- Cartes des Membres avec Suivi Quotidien & Progression -->
-      <section class="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-xl">
-        <div class="flex justify-between items-center mb-6">
-          <div>
-            <h2 class="text-xl font-bold text-slate-100 flex items-center gap-2">
-              <i data-lucide="users" class="w-5 h-5 text-emerald-400"></i>
-              Membres & Suivi Quotidien
-            </h2>
-            <p class="text-xs text-slate-400 mt-1">Suivi du travail du jour & barres de progression individuelles</p>
-          </div>
-          <button onclick="syncWithSupabase()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300" title="Actualiser la synchronisation">
-            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    
+    <!-- Registration / Join Banner (Visible if not registered) -->
+    <section id="joinBanner" class="bg-gradient-to-r from-slate-900 via-emerald-950/40 to-slate-900 border border-emerald-500/30 rounded-2xl p-6 relative overflow-hidden shadow-2xl">
+      <div class="max-w-2xl relative z-10 space-y-4">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <i class="fa-solid fa-users"></i> Session Bi-Hebdomadaire Active
+        </span>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-white">Rejoignez le Sprint de Groupe jusqu'en 2027 !</h2>
+        <p class="text-slate-300 text-sm sm:text-base leading-relaxed">
+          Suivez vos progrès en temps réel, collaborez avec votre binôme d'étude et gardez une régularité irréprochable grâce au suivi collectif.
+        </p>
+        <form id="joinForm" onsubmit="registerUser(event)" class="flex flex-col sm:flex-row gap-3 pt-2">
+          <input type="text" id="regName" required placeholder="Votre nom / pseudo" class="bg-slate-950/80 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 flex-1 text-sm">
+          <input type="text" id="regGoal" required placeholder="Ex: Développeur Fullstack / Data" class="bg-slate-950/80 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 flex-1 text-sm">
+          <button type="submit" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-6 py-2.5 rounded-xl transition shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 text-sm">
+            <i class="fa-solid fa-user-plus"></i> Rejoindre le Groupe
           </button>
-        </div>
+        </form>
+      </div>
+      <div class="absolute -right-10 -bottom-10 opacity-10 text-emerald-400 pointer-events-none">
+        <i class="fa-solid fa-trophy text-[180px]"></i>
+      </div>
+    </section>
 
-        <div id="membersGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Chargé dynamiquement -->
+    <!-- User Active Dashboard Section (Visible once joined) -->
+    <section id="userDashboard" class="hidden grid grid-cols-1 md:grid-cols-3 gap-4">
+      <!-- Card 1: Today Status -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between space-y-4">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Émargement du Jour</span>
+          <span id="todayBadge" class="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-400 border border-slate-700">Non validé</span>
         </div>
-      </section>
-
-      <!-- Comparatif de Progression (%) -->
-      <section class="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-xl">
-        <h2 class="text-xl font-bold text-slate-100 mb-4 flex items-center gap-2">
-          <i data-lucide="bar-chart-3" class="w-5 h-5 text-cyan-400"></i>
-          📊 Avancement Comparatif vers Janvier 2027
-        </h2>
-        <div id="chartsContainer" class="space-y-5 pt-2">
-          <!-- Graphiques générés en JS -->
+        <div>
+          <h3 class="text-xl font-bold text-white mb-1">Avez-vous travaillé aujourd'hui ?</h3>
+          <p class="text-xs text-slate-400">Validez votre journée pour maintenir votre série active !</p>
         </div>
-      </section>
+        <button id="markWorkedBtn" onclick="toggleTodayWork()" class="w-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold py-2.5 rounded-xl transition flex items-center justify-center gap-2 text-sm">
+          <i class="fa-solid fa-check-double"></i> <span id="markBtnText">Marquer comme Travaillé</span>
+        </button>
+      </div>
 
-      <!-- Registre d'Émargement des Comptes-Rendus (Tous les 14 jours) -->
-      <section class="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-xl">
-        <div class="flex justify-between items-center mb-4">
-          <div>
-            <h2 class="text-xl font-bold text-slate-100 flex items-center gap-2">
-              <i data-lucide="calendar-check" class="w-5 h-5 text-indigo-400"></i>
-              🎯 Registre des Comptes-Rendus Bimensuels
-            </h2>
-            <p class="text-xs text-slate-400 mt-0.5">Suivi de l'assiduité aux réunions bimensuelles</p>
+      <!-- Card 2: Jan 2027 Roadmap -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between space-y-4">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Cap Janvier 2027</span>
+          <span id="myOverallPercent" class="text-xs font-bold text-emerald-400">0%</span>
+        </div>
+        <div>
+          <h3 id="myGoalTitle" class="text-lg font-bold text-white truncate">Mon Objectif Pro</h3>
+          <div class="w-full bg-slate-950 rounded-full h-3 mt-3 overflow-hidden border border-slate-800">
+            <div id="myOverallBar" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full w-0 transition-all duration-500"></div>
           </div>
-          <span class="text-xs bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 px-3 py-1 rounded-full font-semibold">
-            Sprint de 2 Semaines
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="range" id="overallSlider" min="0" max="100" value="0" oninput="updateProgress(this.value)" class="w-full accent-emerald-500 cursor-pointer">
+        </div>
+      </div>
+
+      <!-- Card 3: Study Buddy & Sprint -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between space-y-4">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Sprint Bi-Hebdomadaire</span>
+          <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-teal-400 border border-slate-700">14 Jours</span>
+        </div>
+        <div>
+          <p class="text-xs text-slate-400 mb-1">Binôme d'Équipe Assigné</p>
+          <div class="flex items-center gap-3 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
+            <div class="w-8 h-8 rounded-full bg-teal-500/20 text-teal-300 flex items-center justify-center font-bold text-xs">
+              <i class="fa-solid fa-user-group"></i>
+            </div>
+            <div class="overflow-hidden">
+              <p id="buddyName" class="text-sm font-semibold text-slate-200 truncate">Recherche d'un binôme...</p>
+              <p class="text-[11px] text-slate-500">Statut: Connecté au groupe</p>
+            </div>
+          </div>
+        </div>
+        <button onclick="sendKudosToGroup()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-medium py-2 rounded-xl transition text-xs flex items-center justify-center gap-2">
+          <i class="fa-solid fa-hands-clapping text-amber-400"></i> Envoyer des Kudos au Groupe
+        </button>
+      </div>
+    </section>
+
+    <!-- Group Roster & Progress Grid -->
+    <section class="space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+        <div>
+          <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-users text-emerald-400"></i> Membres du Sprint Groupe
+          </h2>
+          <p class="text-xs text-slate-400">Liste synchronisée en temps réel des apprenants enregistrés</p>
+        </div>
+        <div class="flex items-center gap-2 text-xs">
+          <span class="flex items-center gap-1.5 px-3 py-1 bg-slate-900 border border-slate-800 rounded-lg text-slate-300">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            <span id="memberCount">0 membre(s)</span>
           </span>
         </div>
+      </div>
 
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-sm text-slate-300">
-            <thead class="bg-slate-950 text-slate-400 text-xs uppercase border-b border-slate-800">
-              <tr>
-                <th class="p-3">Membre</th>
-                <th class="p-3">Statut Aujourd'hui</th>
-                <th class="p-3">Dernier Rendu</th>
-                <th class="p-3">Assiduité</th>
-              </tr>
-            </thead>
-            <tbody id="attendanceTableBody" class="divide-y divide-slate-800/60">
-              <!-- Rempli par JS -->
-            </tbody>
-          </table>
+      <!-- Member Grid Container -->
+      <div id="membersList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Rendered Member Cards will appear here -->
+      </div>
+      
+      <!-- Empty State -->
+      <div id="emptyMembersNotice" class="hidden bg-slate-900/40 border border-dashed border-slate-800 rounded-2xl p-8 text-center space-y-3">
+        <i class="fa-solid fa-user-slash text-4xl text-slate-600"></i>
+        <h3 class="text-base font-semibold text-slate-300">Aucun membre enregistré pour l'instant</h3>
+        <p class="text-xs text-slate-500 max-w-sm mx-auto">Soyez le premier à rejoindre le groupe en utilisant le formulaire ci-dessus !</p>
+      </div>
+    </section>
+
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4">
+      <!-- AI Assistant Panel -->
+      <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col h-96">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+              <i class="fa-solid fa-robot"></i>
+            </div>
+            <h3 class="font-bold text-white text-sm">Coach Assistant IA - SkillSprint</h3>
+          </div>
+          <span class="text-[11px] text-slate-500">Disponible 24/7</span>
         </div>
-      </section>
 
-    </div>
-
-    <!-- COLONNE DROITE (1 col) : Panneau Interactif & Assistant IA -->
-    <div class="space-y-8">
-
-      <!-- Mon Panneau Personnel -->
-      <section id="myControlPanel" class="bg-gradient-to-b from-slate-900 to-slate-950 rounded-2xl border border-emerald-500/30 p-6 shadow-xl relative overflow-hidden">
-        <div class="absolute -right-6 -top-6 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl pointer-events-none"></div>
-        <h2 class="text-lg font-bold text-emerald-400 mb-4 flex items-center gap-2">
-          <i data-lucide="sliders" class="w-5 h-5"></i>
-          Mon Panneau Interactif
-        </h2>
-
-        <div id="controlPanelContent" class="space-y-5">
-          
-          <!-- BOUTON : A travaillé aujourd'hui ? -->
-          <div class="p-4 rounded-xl bg-slate-950 border border-emerald-500/30 flex flex-col gap-3">
-            <div class="flex justify-between items-center">
-              <div>
-                <div class="text-xs font-bold text-slate-200">Mon activité du jour</div>
-                <div class="text-[11px] text-slate-400">Avez-vous travaillé votre compétence aujourd'hui ?</div>
-              </div>
-              <span id="myWorkedTodayBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full">
-                <!-- Statut dynamique -->
-              </span>
-            </div>
-            <button id="toggleWorkedBtn" onclick="toggleWorkedToday()" class="w-full py-2.5 rounded-xl text-xs font-bold transition-all flex justify-center items-center gap-2">
-              <i data-lucide="check-circle" class="w-4 h-4"></i> Valider ma journée de travail
-            </button>
+        <div id="chatMessages" class="flex-1 overflow-y-auto custom-scrollbar my-3 space-y-3 pr-2 text-xs">
+          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-slate-300 max-w-[85%]">
+            Bonjour ! Je suis votre coach IA pour la promotion 2027. Posez-moi vos questions sur le planning, la motivation ou l'organisation de vos études !
           </div>
+        </div>
 
-          <!-- Mise à jour Progression Globale (2027) -->
-          <div>
-            <div class="flex justify-between text-xs mb-2">
-              <span class="text-slate-300 font-medium">Progression Objectif 2027</span>
-              <span id="myProgressVal" class="font-extrabold text-emerald-400">0%</span>
-            </div>
-            <input type="range" id="progressRange" min="0" max="100" value="0" oninput="updateMyProgress(this.value)" class="w-full accent-emerald-500 h-2 bg-slate-800 rounded-lg cursor-pointer">
-          </div>
+        <form onsubmit="sendAiMessage(event)" class="flex gap-2 pt-2 border-t border-slate-800">
+          <input type="text" id="aiInput" required placeholder="Posez une question à l'IA..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500">
+          <button type="submit" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 px-4 py-2 rounded-xl text-xs font-bold transition">
+            <i class="fa-solid fa-paper-plane"></i>
+          </button>
+        </form>
+      </div>
 
-          <!-- Mise à jour Progression Sprint Actuel (14J) -->
-          <div>
-            <div class="flex justify-between text-xs mb-2">
-              <span class="text-slate-300 font-medium">Progression du Sprint 14J en cours</span>
-              <span id="mySprintVal" class="font-extrabold text-cyan-400">0%</span>
-            </div>
-            <input type="range" id="sprintRange" min="0" max="100" value="0" oninput="updateMySprintProgress(this.value)" class="w-full accent-cyan-500 h-2 bg-slate-800 rounded-lg cursor-pointer">
-          </div>
+      <!-- Activity Feed / SOS Alert Display -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col h-96">
+        <div class="pb-3 border-b border-slate-800 flex items-center justify-between">
+          <h3 class="font-bold text-white text-sm flex items-center gap-2">
+            <i class="fa-solid fa-bullhorn text-amber-400"></i> Signalements & Kudos
+          </h3>
+          <span class="text-[11px] text-slate-500">Direct</span>
+        </div>
 
-          <!-- Activer/Désactiver S.O.S -->
-          <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 flex justify-between items-center">
+        <div id="feedList" class="flex-1 overflow-y-auto custom-scrollbar my-3 space-y-2.5 pr-2">
+          <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80 text-xs text-slate-400 flex items-start gap-2">
+            <i class="fa-solid fa-info-circle text-teal-400 mt-0.5"></i>
             <div>
-              <div class="text-xs font-semibold text-slate-200">Alerte S.O.S Blocage</div>
-              <div class="text-[11px] text-slate-400">Demander de l'aide au groupe</div>
-            </div>
-            <button id="sosToggleBtn" onclick="toggleSOS()" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-400 hover:bg-red-500 hover:text-white transition-all">
-              OFF
-            </button>
-          </div>
-
-          <!-- Binôme d'Entraide -->
-          <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center gap-3">
-            <div class="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
-              <i data-lucide="user-check" class="w-5 h-5"></i>
-            </div>
-            <div>
-              <div class="text-[11px] text-slate-400 uppercase font-semibold">Mon Binôme (Study Buddy)</div>
-              <div id="myBuddyName" class="text-xs font-bold text-slate-200">En attente d'attribution</div>
+              <p class="font-medium text-slate-300">Bienvenue sur le tableau de bord !</p>
+              <p class="text-[10px] text-slate-500">Suivez vos objectifs et entraidez-vous.</p>
             </div>
           </div>
         </div>
-      </section>
-
-      <!-- Assistant IA Intégré -->
-      <section class="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-xl">
-        <h2 class="text-lg font-bold text-cyan-400 mb-4 flex items-center gap-2">
-          <i data-lucide="bot" class="w-5 h-5"></i>
-          Assistant IA Intégré
-        </h2>
-
-        <!-- Onglets IA -->
-        <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800 mb-4 text-xs font-semibold">
-          <button onclick="switchAITab('plan')" id="tabPlanBtn" class="flex-1 py-1.5 rounded-lg bg-slate-800 text-cyan-400 shadow">
-            Feuille de Route 2 Semaines
-          </button>
-          <button onclick="switchAITab('summary')" id="tabSummaryBtn" class="flex-1 py-1.5 rounded-lg text-slate-400 hover:text-slate-200">
-            Ordre du Jour Réunion
-          </button>
-        </div>
-
-        <!-- Tab 1: Plan 14 jours -->
-        <div id="aiPlanTab" class="space-y-3">
-          <p class="text-xs text-slate-400">Générez des actions concrètes à réaliser d'ici le prochain compte-rendu dans 14 jours.</p>
-          <input type="text" id="aiTopicInput" placeholder="Ex: Poster 3 vidéos TikTok par jour, Prospection closing..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
-          <button onclick="generateAIPlan()" id="btnGeneratePlan" class="w-full bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-bold py-2.5 rounded-xl text-xs transition-all flex justify-center items-center gap-2">
-            <i data-lucide="sparkles" class="w-4 h-4"></i> Générer mes objectifs 14J
-          </button>
-        </div>
-
-        <!-- Tab 2: Synthèse Réunion -->
-        <div id="aiSummaryTab" class="space-y-3 hidden">
-          <p class="text-xs text-slate-400">Préparez le compte-rendu collectif pour la réunion bimensuelle du groupe.</p>
-          <button onclick="generateAISummary()" id="btnGenerateSummary" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2.5 rounded-xl text-xs transition-all flex justify-center items-center gap-2">
-            <i data-lucide="file-text" class="w-4 h-4"></i> Synthèse de la session 14J
-          </button>
-        </div>
-
-        <!-- Output Résultat IA -->
-        <div id="aiOutput" class="mt-4 p-3 bg-slate-950 rounded-xl border border-slate-800/80 text-xs text-slate-300 max-h-60 overflow-y-auto custom-scrollbar hidden">
-        </div>
-      </section>
-
-    </div>
+      </div>
+    </section>
 
   </main>
 
-  <!-- Modal Inscription Rapide -->
-  <div id="registerModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
-      <button onclick="toggleModal('registerModal')" class="absolute top-4 right-4 text-slate-400 hover:text-white">
-        <i data-lucide="x" class="w-5 h-5"></i>
-      </button>
-
-      <h3 class="text-xl font-bold text-emerald-400 mb-1">📝 Rejoindre la Tribu</h3>
-      <p class="text-xs text-slate-400 mb-6">Définissez votre compétence et votre objectif final pour **Janvier 2027**.</p>
-
-      <form onsubmit="handleRegister(event)" class="space-y-4">
-        <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">Votre Prénom / Pseudo</label>
-          <input type="text" id="regName" required placeholder="Ex: Pablo" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
-        </div>
-
-        <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">Domaine / Compétence développée</label>
-          <input type="text" id="regSkill" required placeholder="Ex: Création de Contenu TikTok / Finance / Closing" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
-        </div>
-
-        <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">Grand Objectif (Horizon Janvier 2027)</label>
-          <input type="text" id="regTarget" required placeholder="Ex: Atteindre 100k abonnés & monétiser" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
-        </div>
-
-        <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-3 rounded-xl text-xs transition-all shadow-lg shadow-emerald-500/20">
-          Valider mon Engagement 🚀
-        </button>
-      </form>
+  <!-- Modal SOS -->
+  <div id="sosModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+      <div class="flex items-center gap-3 text-rose-400">
+        <i class="fa-solid fa-circle-exclamation text-2xl"></i>
+        <h3 class="text-lg font-bold text-white">Lancer un appel SOS Support</h3>
+      </div>
+      <p class="text-xs text-slate-300">Un blocage technique ou un manque de motivation ? Envoyez une notification prioritaire au groupe.</p>
+      <textarea id="sosMessage" placeholder="Expliquez brièvement votre blocage..." class="w-full h-24 bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-rose-500"></textarea>
+      <div class="flex gap-2 justify-end">
+        <button onclick="closeSosModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold">Annuler</button>
+        <button onclick="confirmSOS()" class="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs font-semibold">Envoyer l'Alerte</button>
+      </div>
     </div>
   </div>
 
-  <!-- JavaScript Logique & Synchronisation Supabase -->
   <script>
-    // Configuration Supabase
-    const SUPABASE_URL = 'https://z-cff2q7mierlomxcy8z6a-cqllf6sj.supabase.co';
-    const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_z-cFf2q7MIErLOmXcY8z6A_cQLLf6Sj';
+    // System Local & Remote State Manager
+    const STORAGE_KEY_USER = "skillsprint_user_profile_v2";
+    const STORAGE_KEY_MEMBERS = "skillsprint_cached_members_v2";
 
-    let supabaseClient = null;
-    if (typeof supabase !== 'undefined') {
-      supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
-    }
+    let currentUser = null;
+    let members = [];
 
-    // Récupérer le membre connecté dans LocalStorage pour garder la session après rafraîchissement
-    let currentUserId = localStorage.getItem("skillsprint_user_id") || null;
-    let membersData = [];
-
-    document.addEventListener("DOMContentLoaded", () => {
-      lucide.createIcons();
-      syncWithSupabase();
-    });
-
-    // Synchronisation Supabase & gestion du membre actif
-    async function syncWithSupabase() {
-      if (!supabaseClient) return;
+    // Load initial cached data from localStorage immediately on script parse
+    function initLocalStorage() {
       try {
-        const { data, error } = await supabaseClient.from('members').select('*');
-        if (data && !error) {
-          membersData = data.map(m => ({
-            ...m,
-            workedToday: m.workedToday ?? m.workedtoday ?? false,
-            sprintProgress: m.sprintProgress ?? m.sprintprogress ?? 0,
-            sosMsg: m.sosMsg ?? m.sosmsg ?? '',
-            lastReport: m.lastReport ?? m.lastreport ?? 'Aujourd\'hui',
-            badges: Array.isArray(m.badges) ? m.badges : ["Membre 🚀"]
-          }));
-
-          // Si l'utilisateur enregistré n'existe plus ou est nul, définir le premier membre si disponible
-          if (!currentUserId && membersData.length > 0) {
-            currentUserId = membersData[0].id;
-            localStorage.setItem("skillsprint_user_id", currentUserId);
-          }
-
-          document.getElementById("activeMembersCount").innerText = `${membersData.length} Membre(s)`;
-
-          renderMembers();
-          renderCharts();
-          renderAttendance();
-          updateMyPanel();
+        const cachedUser = localStorage.getItem(STORAGE_KEY_USER);
+        if (cachedUser) {
+          currentUser = JSON.parse(cachedUser);
         }
-      } catch (err) {
-        console.error("Erreur de synchronisation Supabase:", err);
+
+        const cachedMembers = localStorage.getItem(STORAGE_KEY_MEMBERS);
+        if (cachedMembers) {
+          members = JSON.parse(cachedMembers);
+        }
+      } catch (e) {
+        console.error("Local storage error:", e);
       }
     }
 
-    async function saveMemberToSupabase(member) {
-      if (!supabaseClient) return;
-      try {
-        await supabaseClient.from('members').upsert({
-          id: member.id,
-          name: member.name,
-          avatar: member.avatar,
-          skill: member.skill,
-          target: member.target,
-          workedToday: member.workedToday,
-          progress: member.progress,
-          sprintProgress: member.sprintProgress,
-          streak: member.streak,
-          sos: member.sos,
-          sosMsg: member.sosMsg || '',
-          kudos: member.kudos,
-          buddy: member.buddy || 'Aucun',
-          lastReport: member.lastReport,
-          attendance: member.attendance
-        });
-      } catch (err) {
-        console.error("Erreur de sauvegarde Supabase:", err);
-      }
+    initLocalStorage();
+
+    // Save helpers
+    function saveUserLocally(user) {
+      currentUser = user;
+      localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(user));
     }
 
-    function toggleModal(id) {
-      const modal = document.getElementById(id);
-      modal.classList.toggle("hidden");
+    function saveMembersLocally(mList) {
+      members = mList;
+      localStorage.setItem(STORAGE_KEY_MEMBERS, JSON.stringify(mList));
     }
 
-    // Affichage des cartes membres
-    function renderMembers() {
-      const grid = document.getElementById("membersGrid");
-      grid.innerHTML = "";
+    function renderUI() {
+      // 1. Header Profile & Banners
+      const joinBanner = document.getElementById('joinBanner');
+      const userDashboard = document.getElementById('userDashboard');
+      const userProfileHeader = document.getElementById('userProfileHeader');
+      const sosBtn = document.getElementById('sosBtn');
 
-      if (membersData.length === 0) {
-        grid.innerHTML = `
-          <div class="col-span-2 text-center py-10 bg-slate-950 rounded-xl border border-slate-800">
-            <p class="text-sm text-slate-400 mb-3">Aucun membre inscrit dans le groupe pour le moment.</p>
-            <button onclick="toggleModal('registerModal')" class="bg-emerald-500 text-slate-950 font-bold px-4 py-2 rounded-lg text-xs">
-              Créer le premier profil
-            </button>
-          </div>
-        `;
-        return;
+      if (currentUser) {
+        joinBanner.classList.add('hidden');
+        userDashboard.classList.remove('hidden');
+        userProfileHeader.classList.remove('hidden');
+        sosBtn.classList.remove('hidden');
+
+        document.getElementById('userName').textContent = currentUser.name;
+        document.getElementById('userAvatar').textContent = currentUser.name.substring(0, 2);
+        document.getElementById('myGoalTitle').textContent = currentUser.goal || "Mon Objectif 2027";
+        
+        // Progress bar
+        const overallPercent = currentUser.progress || 0;
+        document.getElementById('myOverallPercent').textContent = `${overallPercent}%`;
+        document.getElementById('myOverallBar').style.width = `${overallPercent}%`;
+        document.getElementById('overallSlider').value = overallPercent;
+
+        // Today worked status
+        const todayStr = new Date().toISOString().split('T')[0];
+        const workedToday = currentUser.lastWorkedDate === todayStr;
+        const todayBadge = document.getElementById('todayBadge');
+        const markBtnText = document.getElementById('markBtnText');
+        
+        if (workedToday) {
+          todayBadge.textContent = "Validé";
+          todayBadge.className = "text-xs px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+          markBtnText.textContent = "Aujourd'hui Fait !";
+        } else {
+          todayBadge.textContent = "Non validé";
+          todayBadge.className = "text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-400 border border-slate-700";
+          markBtnText.textContent = "Marquer comme Travaillé";
+        }
+
+        // Buddy assignment calculation
+        const otherMembers = members.filter(m => m.id !== currentUser.id);
+        if (otherMembers.length > 0) {
+          const buddy = otherMembers[Math.abs(hashString(currentUser.id)) % otherMembers.length];
+          document.getElementById('buddyName').textContent = buddy.name;
+        } else {
+          document.getElementById('buddyName').textContent = "En attente d'autres membres";
+        }
+
+      } else {
+        joinBanner.classList.remove('hidden');
+        userDashboard.classList.add('hidden');
+        userProfileHeader.classList.add('hidden');
+        sosBtn.classList.add('hidden');
       }
 
-      membersData.forEach(m => {
-        const isMe = m.id === currentUserId;
-        const card = document.createElement("div");
-        card.className = `bg-slate-950 p-5 rounded-xl border ${m.sos ? 'border-red-500/80 pulse-sos' : (isMe ? 'border-emerald-500/50' : 'border-slate-800')} flex flex-col justify-between relative transition-all`;
+      // 2. Render Members Grid
+      const membersList = document.getElementById('membersList');
+      const emptyNotice = document.getElementById('emptyMembersNotice');
+      const countSpan = document.getElementById('memberCount');
 
-        card.innerHTML = `
-          ${isMe ? '<span class="absolute top-3 right-3 text-[10px] bg-emerald-500/20 text-emerald-400 font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">Moi</span>' : ''}
-          <div>
-            <div class="flex items-center gap-3 mb-3">
-              <img src="${m.avatar}" class="w-12 h-12 rounded-full object-cover border border-slate-700">
+      countSpan.textContent = `${members.length} membre(s)`;
+
+      if (members.length === 0) {
+        membersList.innerHTML = '';
+        emptyNotice.classList.remove('hidden');
+      } else {
+        emptyNotice.classList.add('hidden');
+        
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        membersList.innerHTML = members.map(m => {
+          const isWorked = m.lastWorkedDate === todayStr;
+          const isCurrent = currentUser && currentUser.id === m.id;
+
+          return `
+            <div class="bg-slate-900 border ${isCurrent ? 'border-emerald-500/50 bg-emerald-950/10' : 'border-slate-800'} rounded-2xl p-4 flex flex-col justify-between space-y-3 shadow-md relative overflow-hidden">
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-sm text-emerald-400 uppercase">
+                    ${m.name.substring(0,2)}
+                  </div>
+                  <div>
+                    <h4 class="font-bold text-slate-100 text-sm flex items-center gap-1.5">
+                      ${escapeHtml(m.name)}
+                      ${isCurrent ? '<span class="text-[10px] px-1.5 py-0.2 bg-emerald-500/20 text-emerald-400 rounded">Moi</span>' : ''}
+                    </h4>
+                    <p class="text-xs text-slate-400 truncate max-w-[160px]">${escapeHtml(m.goal)}</p>
+                  </div>
+                </div>
+                <span class="text-[11px] px-2 py-0.5 rounded-full font-medium ${isWorked ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-500'}">
+                  ${isWorked ? 'Actif aujourd\'hui' : 'Inactif'}
+                </span>
+              </div>
+
               <div>
-                <h3 class="font-bold text-sm text-slate-100 flex items-center gap-1.5 cursor-pointer" onclick="switchUser('${m.id}')" title="Cliquer pour basculer sur ce profil">
-                  ${m.name}
-                  ${m.sos ? '<span class="text-[10px] bg-red-500 text-white font-extrabold px-1.5 py-0.2 rounded animate-bounce">S.O.S</span>' : ''}
-                </h3>
-                <span class="text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-medium">${m.skill}</span>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-400">Progression 2027</span>
+                  <span class="font-bold text-emerald-400">${m.progress || 0}%</span>
+                </div>
+                <div class="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800/80">
+                  <div class="bg-emerald-500 h-full rounded-full" style="width: ${m.progress || 0}%"></div>
+                </div>
               </div>
             </div>
-
-            <div class="mb-3 flex items-center gap-2">
-              <span class="text-[11px] text-slate-400">Aujourd'hui :</span>
-              ${m.workedToday ? 
-                '<span class="text-[10px] bg-emerald-500/20 text-emerald-400 font-bold px-2.5 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1">🟢 A travaillé aujourd\'hui</span>' : 
-                '<span class="text-[10px] bg-amber-500/20 text-amber-400 font-bold px-2.5 py-0.5 rounded-full border border-amber-500/30 flex items-center gap-1">🟠 En repos / En attente</span>'
-              }
-            </div>
-
-            <div class="text-xs text-slate-400 mb-3">
-              🎯 <strong class="text-slate-300">Objectif 2027:</strong> ${m.target}
-            </div>
-
-            ${m.sos ? `
-              <div class="my-2 p-2.5 bg-red-950/60 border border-red-800/80 rounded-lg text-xs text-red-200">
-                ⚠ <strong>Blocage S.O.S :</strong> "${m.sosMsg || 'Besoin d\'aide pour débloquer ma progression !'}"
-              </div>
-            ` : ''}
-
-            <div class="mt-3">
-              <div class="flex justify-between text-xs mb-1">
-                <span class="text-slate-400">Progression Globale (2027)</span>
-                <span class="font-bold text-emerald-400">${m.progress}%</span>
-              </div>
-              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                <div class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full transition-all duration-500" style="width: ${m.progress}%"></div>
-              </div>
-            </div>
-
-            <div class="mt-2">
-              <div class="flex justify-between text-xs mb-1">
-                <span class="text-slate-400">Sprint 14J Actuel</span>
-                <span class="font-bold text-cyan-400">${m.sprintProgress}%</span>
-              </div>
-              <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                <div class="bg-gradient-to-r from-cyan-500 to-indigo-400 h-full transition-all duration-500" style="width: ${m.sprintProgress}%"></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="mt-4 pt-3 border-t border-slate-900 flex justify-between items-center text-xs">
-            <div class="flex items-center gap-1 text-orange-400 font-semibold">
-              🔥 ${m.streak || 1} Sprints
-            </div>
-
-            <button onclick="sendKudos('${m.id}')" class="bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-all">
-              👏 <span class="font-bold text-emerald-400">${m.kudos || 0}</span>
-            </button>
-          </div>
-        `;
-
-        grid.appendChild(card);
-      });
-    }
-
-    function switchUser(id) {
-      currentUserId = id;
-      localStorage.setItem("skillsprint_user_id", id);
-      renderMembers();
-      updateMyPanel();
-    }
-
-    // Graphiques comparatifs
-    function renderCharts() {
-      const container = document.getElementById("chartsContainer");
-      container.innerHTML = "";
-
-      if (membersData.length === 0) {
-        container.innerHTML = `<p class="text-xs text-slate-500">Aucune donnée à afficher.</p>`;
-        return;
-      }
-
-      membersData.forEach(m => {
-        const row = document.createElement("div");
-        row.className = "space-y-1.5 bg-slate-950 p-3 rounded-xl border border-slate-800/80";
-        row.innerHTML = `
-          <div class="flex justify-between text-xs">
-            <span class="text-slate-200 font-semibold flex items-center gap-2">
-              ${m.name} 
-              <span class="text-[10px] text-slate-400">(${m.skill})</span>
-            </span>
-            <span class="font-bold text-emerald-400">2027: ${m.progress}% | Sprint 14J: ${m.sprintProgress}%</span>
-          </div>
-          <div class="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden border border-slate-800">
-            <div class="bg-gradient-to-r from-emerald-500 via-cyan-400 to-indigo-500 h-full transition-all duration-700" style="width: ${m.progress}%"></div>
-          </div>
-        `;
-        container.appendChild(row);
-      });
-    }
-
-    // Tableau d'assiduité
-    function renderAttendance() {
-      const tbody = document.getElementById("attendanceTableBody");
-      tbody.innerHTML = "";
-
-      membersData.forEach(m => {
-        const tr = document.createElement("tr");
-        tr.className = "hover:bg-slate-900/50 transition-colors";
-        tr.innerHTML = `
-          <td class="p-3 font-semibold text-slate-200 flex items-center gap-2">
-            <img src="${m.avatar}" class="w-6 h-6 rounded-full">
-            ${m.name}
-          </td>
-          <td class="p-3">
-            ${m.workedToday ? 
-              '<span class="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/30">🟢 Actif aujourd\'hui</span>' : 
-              '<span class="text-[10px] text-slate-400 bg-slate-800 px-2 py-0.5 rounded-full">Inactif</span>'
-            }
-          </td>
-          <td class="p-3 text-xs text-slate-400">${m.lastReport || 'Aujourd\'hui'}</td>
-          <td class="p-3 font-bold text-indigo-400">${m.attendance || 100}%</td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    // Mettre à jour le panneau personnel
-    function updateMyPanel() {
-      const me = membersData.find(m => m.id === currentUserId);
-      if (!me) return;
-
-      document.getElementById("myProgressVal").innerText = (me.progress || 0) + "%";
-      document.getElementById("progressRange").value = me.progress || 0;
-
-      document.getElementById("mySprintVal").innerText = (me.sprintProgress || 0) + "%";
-      document.getElementById("sprintRange").value = me.sprintProgress || 0;
-
-      const badge = document.getElementById("myWorkedTodayBadge");
-      const toggleBtn = document.getElementById("toggleWorkedBtn");
-
-      if (me.workedToday) {
-        badge.className = "text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
-        badge.innerText = "🟢 Validé";
-        toggleBtn.className = "w-full py-2.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all flex justify-center items-center gap-2";
-        toggleBtn.innerHTML = "✓ Session du jour déjà enregistrée";
-      } else {
-        badge.className = "text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30";
-        badge.innerText = "🟠 Non validé";
-        toggleBtn.className = "w-full py-2.5 rounded-xl text-xs font-bold bg-emerald-500 text-slate-950 hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 flex justify-center items-center gap-2";
-        toggleBtn.innerHTML = "🚀 Marquer comme travaillé aujourd'hui";
-      }
-
-      const sosBtn = document.getElementById("sosToggleBtn");
-      if (me.sos) {
-        sosBtn.className = "px-3 py-1.5 rounded-lg text-xs font-bold bg-red-500 text-white shadow-lg shadow-red-500/30";
-        sosBtn.innerText = "ON (ALERTE)";
-      } else {
-        sosBtn.className = "px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-400 hover:bg-red-500 hover:text-white transition-all";
-        sosBtn.innerText = "OFF";
-      }
-
-      document.getElementById("myBuddyName").innerText = me.buddy || "Aucun";
-    }
-
-    function toggleWorkedToday() {
-      const me = membersData.find(m => m.id === currentUserId);
-      if (me) {
-        me.workedToday = !me.workedToday;
-        updateMyPanel();
-        renderMembers();
-        renderAttendance();
-        saveMemberToSupabase(me);
+          `;
+        }).join('');
       }
     }
 
-    function updateMyProgress(val) {
-      const me = membersData.find(m => m.id === currentUserId);
-      if (me) {
-        me.progress = parseInt(val);
-        document.getElementById("myProgressVal").innerText = val + "%";
-        renderMembers();
-        renderCharts();
-        saveMemberToSupabase(me);
-      }
+    // Helper to safely format text
+    function escapeHtml(str) {
+      return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
 
-    function updateMySprintProgress(val) {
-      const me = membersData.find(m => m.id === currentUserId);
-      if (me) {
-        me.sprintProgress = parseInt(val);
-        document.getElementById("mySprintVal").innerText = val + "%";
-        renderMembers();
-        renderCharts();
-        saveMemberToSupabase(me);
+    function hashString(str) {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = (hash << 5) - hash + str.charCodeAt(i);
+        hash |= 0;
       }
+      return hash;
     }
 
-    function toggleSOS() {
-      const me = membersData.find(m => m.id === currentUserId);
-      if (me) {
-        me.sos = !me.sos;
-        if (me.sos) {
-          const msg = prompt("Expliquez votre blocage aux membres du groupe :");
-          me.sosMsg = msg || "Besoin d'un coup de main !";
-        }
-        updateMyPanel();
-        renderMembers();
-        saveMemberToSupabase(me);
-      }
-    }
-
-    function sendKudos(id) {
-      const target = membersData.find(m => m.id === id);
-      if (target) {
-        target.kudos = (target.kudos || 0) + 1;
-        renderMembers();
-        saveMemberToSupabase(target);
-      }
-    }
-
-    // Inscription avec enregistrement dans localStorage & Supabase
-    async function handleRegister(e) {
+    function registerUser(e) {
       e.preventDefault();
-      const name = document.getElementById("regName").value.trim();
-      const skill = document.getElementById("regSkill").value.trim();
-      const target = document.getElementById("regTarget").value.trim();
+      const name = document.getElementById('regName').value.trim();
+      const goal = document.getElementById('regGoal').value.trim();
 
-      const newId = "user_" + Date.now();
+      if (!name || !goal) return;
 
-      const newMember = {
-        id: newId,
+      const newUser = {
+        id: currentUser ? currentUser.id : 'usr_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
         name: name,
-        avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}`,
-        skill: skill,
-        target: target,
-        workedToday: true,
+        goal: goal,
         progress: 0,
-        sprintProgress: 0,
-        streak: 1,
-        sos: false,
-        kudos: 0,
-        badges: ["Pionnier 🚀"],
-        buddy: "Aucun",
-        lastReport: "Aujourd'hui",
-        attendance: 100
+        lastWorkedDate: null,
+        joinedAt: new Date().toISOString()
       };
 
-      // Sauvegarde du compte actif
-      currentUserId = newId;
-      localStorage.setItem("skillsprint_user_id", newId);
+      saveUserLocally(newUser);
 
-      membersData.push(newMember);
-
-      toggleModal('registerModal');
-      renderMembers();
-      renderCharts();
-      renderAttendance();
-      updateMyPanel();
-
-      await saveMemberToSupabase(newMember);
-      syncWithSupabase();
-    }
-
-    function switchAITab(tab) {
-      const btnPlan = document.getElementById("tabPlanBtn");
-      const btnSummary = document.getElementById("tabSummaryBtn");
-      const tabPlan = document.getElementById("aiPlanTab");
-      const tabSummary = document.getElementById("aiSummaryTab");
-
-      if (tab === 'plan') {
-        btnPlan.className = "flex-1 py-1.5 rounded-lg bg-slate-800 text-cyan-400 shadow";
-        btnSummary.className = "flex-1 py-1.5 rounded-lg text-slate-400 hover:text-slate-200";
-        tabPlan.classList.remove("hidden");
-        tabSummary.classList.add("hidden");
+      // Merge user into local members list immediately
+      const existingIdx = members.findIndex(m => m.id === newUser.id);
+      if (existingIdx >= 0) {
+        members[existingIdx] = newUser;
       } else {
-        btnSummary.className = "flex-1 py-1.5 rounded-lg bg-slate-800 text-indigo-400 shadow";
-        btnPlan.className = "flex-1 py-1.5 rounded-lg text-slate-400 hover:text-slate-200";
-        tabSummary.classList.remove("hidden");
-        tabPlan.classList.add("hidden");
+        members.push(newUser);
       }
+      saveMembersLocally([...members]);
+
+      renderUI();
+      addFeedNotice(`🎉 ${newUser.name} a rejoint le sprint groupe !`, 'emerald');
     }
 
-    function generateAIPlan() {
-      const topic = document.getElementById("aiTopicInput").value || "Génération de Leads & Marketing";
-      const out = document.getElementById("aiOutput");
+    function toggleTodayWork() {
+      if (!currentUser) return;
 
-      out.classList.remove("hidden");
-      out.innerHTML = `<p class="text-cyan-400 font-bold mb-2">🤖 Plan d'Actions (14 Jours) pour : ${topic}</p>
-      <ul class="space-y-1.5 text-slate-300 text-[11px] list-disc list-inside">
-        <li><strong>Semaine 1 :</strong> Tester 5 formats de scripts / approches stratégiques.</li>
-        <li><strong>Jour 7 :</strong> Faire un premier bilan intermédiaire avec son binôme.</li>
-        <li><strong>Semaine 2 :</strong> Analyser les retours & ajuster la méthode.</li>
-        <li><strong>Jour 14 :</strong> Synthétiser les résultats pour le compte-rendu bimensuel.</li>
-      </ul>`;
+      const todayStr = new Date().toISOString().split('T')[0];
+      if (currentUser.lastWorkedDate === todayStr) {
+        currentUser.lastWorkedDate = null;
+      } else {
+        currentUser.lastWorkedDate = todayStr;
+        addFeedNotice(`⚡ ${currentUser.name} a validé son travail pour aujourd'hui !`, 'amber');
+      }
+
+      saveUserLocally(currentUser);
+      
+      const idx = members.findIndex(m => m.id === currentUser.id);
+      if (idx >= 0) {
+        members[idx] = currentUser;
+        saveMembersLocally([...members]);
+      }
+
+      renderUI();
     }
 
-    function generateAISummary() {
-      const out = document.getElementById("aiOutput");
-      out.classList.remove("hidden");
+    function updateProgress(val) {
+      if (!currentUser) return;
+      currentUser.progress = parseInt(val, 10);
+      saveUserLocally(currentUser);
 
-      out.innerHTML = `<p class="text-indigo-400 font-bold mb-2">📋 Ordre du Jour - Session Bimensuelle</p>
-      <div class="text-[11px] space-y-1.5">
-        <p>• <strong>Tour de table (10 min) :</strong> Présentation des résultats des 14 derniers jours.</p>
-        <p>• <strong>Résolution S.O.S (15 min) :</strong> Entraide sur les blocages signalés.</p>
-        <p>• <strong>Objectifs suivants :</strong> Définition des engagements pour les 2 prochaines semaines.</p>
-      </div>`;
+      const idx = members.findIndex(m => m.id === currentUser.id);
+      if (idx >= 0) {
+        members[idx] = currentUser;
+        saveMembersLocally([...members]);
+      }
+
+      renderUI();
     }
+
+    function logout() {
+      localStorage.removeItem(STORAGE_KEY_USER);
+      currentUser = null;
+      renderUI();
+    }
+
+    // Feed / SOS Notifications
+    function addFeedNotice(msg, color = 'emerald') {
+      const feed = document.getElementById('feedList');
+      const div = document.createElement('div');
+      div.className = `bg-slate-950/80 p-2.5 rounded-xl border border-slate-800 text-xs text-slate-300 flex items-start gap-2 border-l-2 border-l-${color}-500`;
+      div.innerHTML = `
+        <i class="fa-solid fa-bell text-${color}-400 mt-0.5"></i>
+        <div>
+          <p class="font-medium text-slate-200">${escapeHtml(msg)}</p>
+          <p class="text-[10px] text-slate-500">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+        </div>
+      `;
+      feed.prepend(div);
+    }
+
+    function sendKudosToGroup() {
+      if (!currentUser) return;
+      addFeedNotice(`🙌 Kudos envoyés par ${currentUser.name} ! Bon courage à tous !`, 'emerald');
+    }
+
+    function triggerSOS() {
+      document.getElementById('sosModal').classList.remove('hidden');
+      document.getElementById('sosModal').classList.add('flex');
+    }
+
+    function closeSosModal() {
+      document.getElementById('sosModal').classList.add('hidden');
+      document.getElementById('sosModal').classList.remove('flex');
+    }
+
+    function confirmSOS() {
+      const msg = document.getElementById('sosMessage').value.trim();
+      if (!msg) return;
+      addFeedNotice(`🚨 SOS de ${currentUser.name}: "${msg}"`, 'rose');
+      closeSosModal();
+      document.getElementById('sosMessage').value = '';
+    }
+
+    function sendAiMessage(e) {
+      e.preventDefault();
+      const input = document.getElementById('aiInput');
+      const txt = input.value.trim();
+      if (!txt) return;
+
+      const chat = document.getElementById('chatMessages');
+
+      // User Msg
+      const uDiv = document.createElement('div');
+      uDiv.className = "bg-emerald-600/20 text-emerald-200 p-3 rounded-xl border border-emerald-500/30 ml-auto max-w-[85%]";
+      uDiv.textContent = txt;
+      chat.appendChild(uDiv);
+
+      input.value = '';
+      chat.scrollTop = chat.scrollHeight;
+
+      // Simulated Response
+      setTimeout(() => {
+        const aiDiv = document.createElement('div');
+        aiDiv.className = "bg-slate-950 p-3 rounded-xl border border-slate-800 text-slate-300 max-w-[85%]";
+        
+        let reply = "Excellente question ! Pour atteindre l'objectif Janvier 2027, restez constant chaque jour et validez vos sessions de travail régulières.";
+        if (txt.toLowerCase().includes('motivation')) {
+          reply = "La motivation vient en pratiquant ! Même 20 minutes aujourd'hui feront la différence sur 2 ans.";
+        } else if (txt.toLowerCase().includes('sprint') || txt.toLowerCase().includes('planning')) {
+          reply = "Chaque sprint bi-hebdomadaire vous permet de valider des micro-objectifs. Découpez vos tâches pour ne pas procrastiner.";
+        }
+
+        aiDiv.textContent = reply;
+        chat.appendChild(aiDiv);
+        chat.scrollTop = chat.scrollHeight;
+      }, 600);
+    }
+
+    // Initial boot logic
+    window.onload = function() {
+      renderUI();
+    };
   </script>
 </body>
 </html>
