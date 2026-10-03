@@ -1,396 +1,677 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SkillSprint Pro - Dashboard</title>
-
+  <title>SkillSprint Pro Dashboard</title>
+  
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
+              900: '#064e3b',
+            }
+          }
+        }
+      }
+    }
+  </script>
 
-  <!-- React & React DOM CDN -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-
-  <!-- Babel CDN pour compiler le JSX dans le navigateur -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <!-- Supabase JS Client CDN -->
+  <!-- Supabase JS CDN v2 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    body {
+      background-color: #020617;
+      color: #f8fafc;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+  </style>
 </head>
-<body class="bg-slate-950 text-slate-100 font-sans">
+<body class="min-h-screen bg-slate-950 text-slate-100 antialiased selection:bg-emerald-500 selection:text-slate-950 pb-16">
 
-  <!-- Point d'ancrage de l'application React -->
-  <div id="root"></div>
+  <!-- Status Notification Banner -->
+  <div id="status-banner" class="hidden text-center py-2 px-4 text-xs font-semibold flex items-center justify-center gap-2 border-b"></div>
 
-  <!-- Code React / App -->
-  <script type="text/babel">
-    const { useState, useEffect } = React;
-
-    // 1. Configuration Supabase avec vos clés API
-    const SUPABASE_URL = "https://vnkpgebvoigojihujklo.supabase.co";
-    const SUPABASE_ANON_KEY = "sb_publishable_AaB4r6OTWzPunASGTcFYvQ_n6LQH-vb";
-
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    function SkillSprintApp() {
-      const [session, setSession] = useState(null);
-      const [currentUser, setCurrentUser] = useState(null);
-      const [members, setMembers] = useState([]);
-      const [reports, setReports] = useState([]);
-      const [loading, setLoading] = useState(true);
-
-      const [newReport, setNewReport] = useState({
-        sprint_name: 'Sprint 1',
-        summary: '',
-        blockers: '',
-        deliverable_url: '',
-        deliverable_type: 'Projet'
-      });
-
-      useEffect(() => {
-        // Charger la session active
-        supabase.auth.getSession().then(({ data: { session } }) => {
-          setSession(session);
-          if (session) handleUserSync(session.user);
-        });
-
-        // Écouter les connexions/déconnexions
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-          setSession(session);
-          if (session) {
-            handleUserSync(session.user);
-          } else {
-            setCurrentUser(null);
-          }
-        });
-
-        fetchData();
-
-        return () => subscription.unsubscribe();
-      }, []);
-
-      // Synchronisation du profil membre dans la table 'members'
-      const handleUserSync = async (user) => {
-        try {
-          const githubUsername = user.user_metadata.full_name || user.user_metadata.user_name || "Membre";
-          const avatarUrl = user.user_metadata.avatar_url;
-
-          let { data: existingMember } = await supabase
-            .from('members')
-            .select('*')
-            .eq('github_id', user.id)
-            .maybeSingle();
-
-          if (!existingMember) {
-            const { data: newMember, error: insertError } = await supabase
-              .from('members')
-              .insert([
-                {
-                  github_id: user.id,
-                  name: githubUsername,
-                  avatar_url: avatarUrl,
-                  skill: "Développement Web",
-                  category: "Tech",
-                  target: "Finaliser SkillSprint",
-                  progress: 10,
-                  streak: 1
-                }
-              ])
-              .select()
-              .single();
-
-            if (insertError) throw insertError;
-            setCurrentUser(newMember);
-          } else {
-            setCurrentUser(existingMember);
-          }
-        } catch (err) {
-          console.error("Erreur de synchronisation du profil :", err.message);
-        }
-      };
-
-      // Récupération des données en temps réel
-      const fetchData = async () => {
-        setLoading(true);
-
-        const { data: membersData } = await supabase
-          .from('members')
-          .select('*')
-          .order('progress', { ascending: false });
-
-        const { data: reportsData } = await supabase
-          .from('reports')
-          .select('*, members(name, avatar_url)')
-          .order('created_at', { ascending: false });
-
-        if (membersData) setMembers(membersData);
-        if (reportsData) setReports(reportsData);
-        setLoading(false);
-      };
-
-      const handleLoginWithGitHub = async () => {
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: 'github',
-          options: {
-            redirectTo: window.location.origin
-          }
-        });
-        if (error) console.error("Erreur OAuth :", error.message);
-      };
-
-      const handleLogout = async () => {
-        await supabase.auth.signOut();
-      };
-
-      const handleSubmitReport = async (e) => {
-        e.preventDefault();
-        if (!currentUser) return alert("Veuillez vous connecter !");
-
-        const { error } = await supabase.from('reports').insert([
-          {
-            member_id: currentUser.id,
-            sprint_name: newReport.sprint_name,
-            summary: newReport.summary,
-            blockers: newReport.blockers,
-            deliverable_url: newReport.deliverable_url,
-            deliverable_type: newReport.deliverable_type
-          }
-        ]);
-
-        if (!error) {
-          setNewReport({
-            sprint_name: 'Sprint 1',
-            summary: '',
-            blockers: '',
-            deliverable_url: '',
-            deliverable_type: 'Projet'
-          });
-          fetchData();
-        } else {
-          alert("Erreur lors de l'envoi : " + error.message);
-        }
-      };
-
-      return (
-        <div className="min-h-screen p-6">
-          {/* Header */}
-          <header className="max-w-7xl mx-auto flex justify-between items-center pb-8 border-b border-slate-800">
-            <div>
-              <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-500">
-                SkillSprint Pro 🚀
-              </h1>
-              <p className="text-slate-400 text-sm mt-1">Dashboard d'apprentissage en groupe & suivi de sprints</p>
-            </div>
-
-            <div>
-              {!session ? (
-                <button
-                  onClick={handleLoginWithGitHub}
-                  className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-medium px-4 py-2 rounded-lg transition-all border border-slate-700"
-                >
-                  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
-                  </svg>
-                  Se connecter avec GitHub
-                </button>
-              ) : (
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={currentUser?.avatar_url || session.user.user_metadata.avatar_url}
-                      alt="Avatar"
-                      className="w-10 h-10 rounded-full border border-emerald-500"
-                    />
-                    <div className="text-left">
-                      <p className="font-semibold text-sm">{currentUser?.name || "Membre"}</p>
-                      <p className="text-xs text-emerald-400">● En ligne</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={handleLogout}
-                    className="text-xs bg-slate-900 hover:bg-slate-800 text-slate-400 px-3 py-2 rounded-md border border-slate-800"
-                  >
-                    Déconnexion
-                  </button>
-                </div>
-              )}
-            </div>
-          </header>
-
-          {/* Core Content */}
-          <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
-            
-            {/* Membres & Coffre */}
-            <div className="lg:col-span-2 space-y-8">
-              
-              {/* Tribu */}
-              <section className="bg-slate-900 p-6 rounded-xl border border-slate-800">
-                <h2 className="text-xl font-bold mb-4 text-emerald-400">Tribu & Progression</h2>
-                {loading ? (
-                  <p className="text-slate-500">Chargement des membres...</p>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {members.map((member) => (
-                      <div key={member.id} className="bg-slate-950 p-4 rounded-lg border border-slate-800/80 flex flex-col justify-between">
-                        <div className="flex items-center gap-3">
-                          <img src={member.avatar_url} alt="" className="w-12 h-12 rounded-full" />
-                          <div>
-                            <h3 className="font-semibold">{member.name}</h3>
-                            <span className="text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded">
-                              {member.skill}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="mt-4">
-                          <div className="flex justify-between text-xs mb-1">
-                            <span className="text-slate-400">Progression</span>
-                            <span className="font-bold text-emerald-400">{member.progress}%</span>
-                          </div>
-                          <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                            <div
-                              className="bg-emerald-500 h-full transition-all duration-300"
-                              style={{ width: `${member.progress}%` }}
-                            ></div>
-                          </div>
-                        </div>
-
-                        <div className="flex justify-between items-center mt-3 pt-2 border-t border-slate-900 text-xs text-slate-400">
-                          <span>🔥 Série : {member.streak} jours</span>
-                          <div className="flex gap-1">
-                            {member.badges?.map((badge, idx) => (
-                              <span key={idx} className="bg-slate-800 px-1.5 py-0.5 rounded">{badge}</span>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </section>
-
-              {/* Coffre des livrables */}
-              <section className="bg-slate-900 p-6 rounded-xl border border-slate-800">
-                <h2 className="text-xl font-bold mb-4 text-cyan-400">Le Coffre (Vault) - Bilans & Livrables</h2>
-                <div className="space-y-4">
-                  {reports.length === 0 ? (
-                    <p className="text-slate-500 text-sm">Aucun bilan soumis pour le moment.</p>
-                  ) : (
-                    reports.map((report) => (
-                      <div key={report.id} className="bg-slate-950 p-4 rounded-lg border border-slate-800">
-                        <div className="flex justify-between items-start">
-                          <div className="flex items-center gap-2">
-                            <img src={report.members?.avatar_url} alt="" className="w-6 h-6 rounded-full" />
-                            <span className="font-medium text-sm">{report.members?.name}</span>
-                            <span className="text-xs bg-cyan-950 text-cyan-400 border border-cyan-800 px-2 py-0.5 rounded">
-                              {report.sprint_name}
-                            </span>
-                          </div>
-                          <span className="text-xs text-slate-500">
-                            {new Date(report.created_at).toLocaleDateString()}
-                          </span>
-                        </div>
-
-                        <p className="text-sm mt-3 text-slate-300">{report.summary}</p>
-
-                        {report.blockers && (
-                          <div className="mt-2 text-xs bg-red-950/40 border border-red-900/50 p-2 rounded text-red-300">
-                            ⚠️ <strong>Blocages :</strong> {report.blockers}
-                          </div>
-                        )}
-
-                        {report.deliverable_url && (
-                          <a
-                            href={report.deliverable_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-block mt-3 text-xs text-emerald-400 hover:underline"
-                          >
-                            🔗 Voir le projet / livrable →
-                          </a>
-                        )}
-                      </div>
-                    ))
-                  )}
-                </div>
-              </section>
-
-            </div>
-
-            {/* Formulaire d'envoi */}
-            <div className="space-y-8">
-              <section className="bg-slate-900 p-6 rounded-xl border border-slate-800">
-                <h2 className="text-xl font-bold mb-4 text-white">Soumettre un bilan</h2>
-
-                {!session ? (
-                  <p className="text-sm text-slate-400">Connectez-vous avec GitHub pour poster un livrable.</p>
-                ) : (
-                  <form onSubmit={handleSubmitReport} className="space-y-4">
-                    <div>
-                      <label className="block text-xs text-slate-400 mb-1">Sprint</label>
-                      <input
-                        type="text"
-                        value={newReport.sprint_name}
-                        onChange={(e) => setNewReport({ ...newReport, sprint_name: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs text-slate-400 mb-1">Résumé du travail effectué</label>
-                      <textarea
-                        rows="3"
-                        value={newReport.summary}
-                        onChange={(e) => setNewReport({ ...newReport, summary: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
-                        placeholder="Qu'avez-vous accompli aujourd'hui ?"
-                        required
-                      ></textarea>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs text-slate-400 mb-1">Difficultés / Blocages (Optionnel)</label>
-                      <input
-                        type="text"
-                        value={newReport.blockers}
-                        onChange={(e) => setNewReport({ ...newReport, blockers: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
-                        placeholder="Ex: Configuration OAuth, Supabase..."
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs text-slate-400 mb-1">Lien du livrable (GitHub, Vercel, Figma)</label>
-                      <input
-                        type="url"
-                        value={newReport.deliverable_url}
-                        onChange={(e) => setNewReport({ ...newReport, deliverable_url: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
-                        placeholder="https://github.com/..."
-                      />
-                    </div>
-
-                    <button
-                      type="submit"
-                      className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2 rounded-lg transition-all"
-                    >
-                      Publier mon bilan
-                    </button>
-                  </form>
-                )}
-              </section>
-            </div>
-
-          </main>
+  <!-- Header -->
+  <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 lg:px-8 py-4">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center text-slate-950 font-black text-xl shadow-lg shadow-emerald-500/20">
+          ⚡
         </div>
-      );
+        <div>
+          <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
+            SkillSprint Pro
+          </h1>
+          <p class="text-xs text-slate-400">Dashboard Collaboratif & Suivi de Sprints</p>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-3 flex-wrap">
+        <button id="btn-toggle-config" class="px-3 py-1.5 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center gap-2 transition">
+          <i class="fa-solid fa-gear text-emerald-400"></i>
+          <span>API Config</span>
+        </button>
+
+        <button id="btn-toggle-demo" class="px-3 py-1.5 text-xs font-medium rounded-lg border bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 transition flex items-center gap-2">
+          <i class="fa-solid fa-flask"></i>
+          <span id="demo-btn-text">Simuler Connexion</span>
+        </button>
+
+        <div id="user-profile-bar" class="hidden flex items-center gap-3 pl-2 border-l border-slate-800">
+          <img id="user-avatar" src="" alt="Avatar" class="w-8 h-8 rounded-full border border-emerald-500/50 object-cover" />
+          <div class="hidden sm:block text-left text-xs">
+            <p id="user-name" class="font-semibold text-slate-200"></p>
+            <p class="text-[10px] text-emerald-400">● En ligne</p>
+          </div>
+          <button id="btn-logout" class="p-1.5 text-slate-400 hover:text-slate-200 text-xs" title="Se déconnecter">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+        </div>
+
+        <button id="btn-github-login" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 font-medium text-xs border border-slate-700 flex items-center gap-2 transition shadow-md">
+          <i class="fa-brands fa-github text-base"></i>
+          GitHub OAuth
+        </button>
+      </div>
+    </div>
+
+    <!-- API Config Drawer -->
+    <div id="config-drawer" class="hidden max-w-7xl mx-auto mt-4 p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-slate-400 mb-1 font-mono">SUPABASE_URL</label>
+        <input id="cfg-url" type="text" class="w-full bg-slate-900 border border-slate-800 rounded px-3 py-1.5 text-slate-200 font-mono text-[11px] focus:outline-none focus:border-emerald-500" />
+      </div>
+      <div>
+        <label class="block text-slate-400 mb-1 font-mono">SUPABASE_ANON_KEY</label>
+        <input id="cfg-key" type="text" class="w-full bg-slate-900 border border-slate-800 rounded px-3 py-1.5 text-slate-200 font-mono text-[11px] focus:outline-none focus:border-emerald-500" />
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Grid Layout -->
+  <main class="max-w-7xl mx-auto px-4 lg:px-8 mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+    
+    <!-- Left 2 Columns -->
+    <div class="lg:col-span-2 space-y-8">
+      
+      <!-- Interactive Quick Action Box for Logged In User -->
+      <section id="user-action-box" class="hidden bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 p-5 rounded-2xl border border-emerald-500/30 shadow-xl relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none"></div>
+        <h2 class="text-sm font-semibold uppercase tracking-wider text-emerald-400 mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-sliders"></i>
+          Mon Espace d'Action Rapide (<span id="action-box-username">--</span>)
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Progress Slider -->
+          <div>
+            <div class="flex justify-between text-xs mb-2">
+              <span class="text-slate-400">Mettre à jour ma progression</span>
+              <span id="range-value-label" class="font-bold text-emerald-400">50%</span>
+            </div>
+            <input id="input-progress" type="range" min="0" max="100" value="50" class="w-full accent-emerald-500 bg-slate-800 rounded-lg h-2 cursor-pointer" />
+          </div>
+
+          <!-- SOS Trigger -->
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-xs text-slate-400">Bouton S.O.S (Signaler un blocage)</span>
+              <button id="btn-toggle-sos" class="px-3 py-1 rounded text-xs font-bold transition flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span id="sos-btn-text">Déclencher S.O.S</span>
+              </button>
+            </div>
+            <div id="sos-input-container" class="hidden mt-2">
+              <input id="input-sos-message" type="text" placeholder="Entrez la raison du blocage..." class="w-full bg-slate-950 border border-rose-900/50 rounded px-3 py-1.5 text-xs text-rose-200 placeholder-rose-700 focus:outline-none" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tribe Members List -->
+      <section class="bg-slate-900/80 backdrop-blur p-6 rounded-2xl border border-slate-800 shadow-xl">
+        <div class="flex justify-between items-center mb-6">
+          <div>
+            <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+              <i class="fa-solid fa-users text-emerald-400"></i>
+              Tribu & Progression
+            </h2>
+            <p class="text-xs text-slate-400">Membres actifs du groupe d'apprentissage</p>
+          </div>
+          <button id="btn-refresh-data" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition text-xs" title="Actualiser">
+            <i class="fa-solid fa-rotate-right"></i>
+          </button>
+        </div>
+
+        <div id="members-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Member cards generated by JS -->
+        </div>
+      </section>
+
+      <!-- Reports / Vault Section -->
+      <section class="bg-slate-900/80 backdrop-blur p-6 rounded-2xl border border-slate-800 shadow-xl">
+        <div class="mb-6">
+          <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+            <i class="fa-solid fa-box-archive text-cyan-400"></i>
+            Le Coffre (Vault) - Bilans & Livrables
+          </h2>
+          <p class="text-xs text-slate-400">Historique des publications et livrables de l'équipe</p>
+        </div>
+
+        <div id="reports-list" class="space-y-4">
+          <!-- Reports feed generated by JS -->
+        </div>
+      </section>
+    </div>
+
+    <!-- Right Column: Submission Form -->
+    <div>
+      <section class="bg-slate-900/80 backdrop-blur p-6 rounded-2xl border border-slate-800 shadow-xl sticky top-24">
+        <h2 class="text-lg font-bold text-slate-100 mb-1 flex items-center gap-2">
+          <i class="fa-solid fa-paper-plane text-emerald-400"></i>
+          Soumettre un bilan
+        </h2>
+        <p class="text-xs text-slate-400 mb-6">Partagez votre avancement quotidien avec le groupe</p>
+
+        <div id="form-lock-notice" class="bg-slate-950 border border-slate-800 rounded-xl p-6 text-center space-y-4">
+          <div class="w-12 h-12 rounded-full bg-slate-900 flex items-center justify-center mx-auto text-slate-400">
+            <i class="fa-solid fa-lock text-xl"></i>
+          </div>
+          <p class="text-xs text-slate-400">
+            Vous devez être connecté pour publier dans le coffre.
+          </p>
+          <button id="btn-form-demo-trigger" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs rounded-lg transition">
+            Activer le Mode Démo
+          </button>
+        </div>
+
+        <form id="report-form" class="hidden space-y-4">
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Nom du Sprint</label>
+            <input id="input-sprint-name" type="text" value="Sprint 1 - Finalisation" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 transition" required />
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Résumé du travail accompli</label>
+            <textarea id="input-summary" rows="4" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 transition" placeholder="Aujourd'hui j'ai accompli..." required></textarea>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Difficultés / Blocages (Optionnel)</label>
+            <input id="input-blockers" type="text" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 transition" placeholder="Ex: Problème d'intégration RLS..." />
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Lien du livrable (GitHub, Figma...)</label>
+            <input id="input-deliverable" type="url" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 transition" placeholder="https://github.com/..." />
+          </div>
+
+          <button type="submit" class="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-bold py-2.5 rounded-xl text-xs transition shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2">
+            <i class="fa-solid fa-paper-plane"></i>
+            Publier dans le Coffre
+          </button>
+        </form>
+      </section>
+    </div>
+
+  </main>
+
+  <!-- JavaScript Application Logic -->
+  <script>
+    // Configuration Defaults
+    const DEFAULT_SUPABASE_URL = "https://vnkpgebvoigojihujklo.supabase.co";
+    const DEFAULT_SUPABASE_ANON_KEY = "sb_publishable_AaB4r6OTWzPunASGTcFYvQ_n6LQH-vb";
+
+    // Application State
+    let supabaseClient = null;
+    let currentUser = null;
+    let demoMode = false;
+
+    let members = [
+      {
+        id: "m-1",
+        name: "Alexandre Dev",
+        avatar_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
+        skill: "Fullstack React / Node",
+        progress: 85,
+        streak: 12,
+        sos_active: false,
+        sos_message: "",
+        badges: ["Pionnier 🚀", "Sprint Master ⚡"]
+      },
+      {
+        id: "m-2",
+        name: "Sarah Designer",
+        avatar_url: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150",
+        skill: "UI/UX & Design Systems",
+        progress: 60,
+        streak: 7,
+        sos_active: true,
+        sos_message: "Besoin d'aide pour animer les SVGs sous Framer Motion !",
+        badges: ["Créatif 🎨"]
+      },
+      {
+        id: "m-3",
+        name: "Jordan P.",
+        avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
+        skill: "Supabase & Web Security",
+        progress: 92,
+        streak: 19,
+        sos_active: false,
+        sos_message: "",
+        badges: ["Pionnier 🚀", "DB Wizard 🧙‍♂️️"]
+      }
+    ];
+
+    let reports = [
+      {
+        id: "r-1",
+        sprint_name: "Sprint 1 - Authentification",
+        summary: "Mise en place réussie du flux OAuth GitHub avec Supabase. Création des tables 'members' et 'reports'.",
+        blockers: null,
+        deliverable_url: "https://github.com",
+        created_at: new Date(Date.now() - 3600000 * 5).toISOString(),
+        members: {
+          name: "Jordan P.",
+          avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150"
+        }
+      },
+      {
+        id: "r-2",
+        sprint_name: "Sprint 1 - Design System",
+        summary: "Prototypage Figma des composants React et palettes Tailwind CSS.",
+        blockers: "Légère hésitation sur l'accessibilité des contrastes sombres.",
+        deliverable_url: "https://figma.com",
+        created_at: new Date(Date.now() - 3600000 * 24).toISOString(),
+        members: {
+          name: "Sarah Designer",
+          avatar_url: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150"
+        }
+      }
+    ];
+
+    // DOM Elements
+    const statusBanner = document.getElementById('status-banner');
+    const configDrawer = document.getElementById('config-drawer');
+    const cfgUrl = document.getElementById('cfg-url');
+    const cfgKey = document.getElementById('cfg-key');
+    const btnToggleConfig = document.getElementById('btn-toggle-config');
+    const btnToggleDemo = document.getElementById('btn-toggle-demo');
+    const demoBtnText = document.getElementById('demo-btn-text');
+    const btnGithubLogin = document.getElementById('btn-github-login');
+    const btnLogout = document.getElementById('btn-logout');
+    const userProfileBar = document.getElementById('user-profile-bar');
+    const userAvatar = document.getElementById('user-avatar');
+    const userName = document.getElementById('user-name');
+    const userActionBox = document.getElementById('user-action-box');
+    const actionBoxUsername = document.getElementById('action-box-username');
+    const inputProgress = document.getElementById('input-progress');
+    const rangeValueLabel = document.getElementById('range-value-label');
+    const btnToggleSos = document.getElementById('btn-toggle-sos');
+    const sosBtnText = document.getElementById('sos-btn-text');
+    const sosInputContainer = document.getElementById('sos-input-container');
+    const inputSosMessage = document.getElementById('input-sos-message');
+    const membersList = document.getElementById('members-list');
+    const reportsList = document.getElementById('reports-list');
+    const reportForm = document.getElementById('report-form');
+    const formLockNotice = document.getElementById('form-lock-notice');
+    const btnFormDemoTrigger = document.getElementById('btn-form-demo-trigger');
+    const btnRefreshData = document.getElementById('btn-refresh-data');
+
+    // UI Banner Handler
+    function showStatus(text, type = 'success') {
+      statusBanner.textContent = text;
+      statusBanner.className = `text-center py-2 px-4 text-xs font-semibold flex items-center justify-center gap-2 border-b ${
+        type === 'error' ? 'bg-rose-950/80 text-rose-300 border-rose-800' :
+        type === 'info' ? 'bg-amber-950/80 text-amber-300 border-amber-800' :
+        'bg-emerald-950/80 text-emerald-300 border-emerald-800'
+      }`;
+      statusBanner.classList.remove('hidden');
+      setTimeout(() => statusBanner.classList.add('hidden'), 4000);
     }
 
-    // Rendu principal dans la page
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<SkillSprintApp />);
+    // Initialize Supabase Client
+    function initSupabase() {
+      const url = cfgUrl.value.trim();
+      const key = cfgKey.value.trim();
+      if (url && key && window.supabase) {
+        try {
+          supabaseClient = window.supabase.createClient(url, key);
+          checkAuthSession();
+        } catch (e) {
+          console.warn("Supabase Init Error:", e);
+        }
+      }
+    }
+
+    // Check Auth Session
+    async function checkAuthSession() {
+      if (!supabaseClient) return;
+      try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session) {
+          setAuthenticatedUser({
+            id: session.user.id,
+            name: session.user.user_metadata?.full_name || "Membre Pro",
+            avatar_url: session.user.user_metadata?.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
+            progress: 50,
+            sos_active: false
+          });
+        }
+      } catch (err) {
+        console.warn("Auth Session check failed:", err);
+      }
+    }
+
+    // Render Members
+    function renderMembers() {
+      membersList.innerHTML = members.map(m => `
+        <div class="p-4 rounded-xl border transition-all duration-300 ${
+          m.sos_active
+            ? 'bg-rose-950/20 border-rose-900/80 shadow-lg shadow-rose-950/50'
+            : 'bg-slate-950 border-slate-800/80 hover:border-slate-700'
+        }">
+          <div class="flex items-start justify-between">
+            <div class="flex items-center gap-3">
+              <img src="${m.avatar_url}" alt="${m.name}" class="w-11 h-11 rounded-full object-cover border border-slate-700" />
+              <div>
+                <h3 class="font-semibold text-sm text-slate-100 flex items-center gap-1.5">
+                  ${m.name}
+                  ${m.sos_active ? `<span class="text-[10px] bg-rose-500/20 text-rose-400 px-1.5 py-0.5 rounded font-bold">S.O.S</span>` : ''}
+                </h3>
+                <span class="inline-block text-[11px] bg-slate-800 text-emerald-400 px-2 py-0.5 rounded-full font-medium mt-0.5">
+                  ${m.skill || 'Développement Web'}
+                </span>
+              </div>
+            </div>
+            <span class="text-xs font-bold text-amber-400 flex items-center gap-1">
+              🔥 ${m.streak || 1}j
+            </span>
+          </div>
+
+          ${m.sos_active && m.sos_message ? `
+            <div class="mt-3 text-xs bg-rose-950/60 border border-rose-800/50 text-rose-300 p-2 rounded-lg">
+              💬 "${m.sos_message}"
+            </div>
+          ` : ''}
+
+          <div class="mt-4">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-400">Objectif Sprint</span>
+              <span class="font-bold text-emerald-400">${m.progress || 0}%</span>
+            </div>
+            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+              <div class="bg-gradient-to-r from-emerald-500 to-cyan-400 h-full transition-all duration-500 rounded-full" style="width: ${m.progress || 0}%"></div>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-slate-900/80">
+            ${(m.badges || ['Pionnier 🚀']).map(b => `
+              <span class="text-[10px] bg-slate-900 border border-slate-800 text-slate-300 px-2 py-0.5 rounded-md">${b}</span>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Render Reports Feed
+    function renderReports() {
+      if (reports.length === 0) {
+        reportsList.innerHTML = `<div class="text-center py-8 text-slate-500 text-sm">Aucun bilan publié pour le moment.</div>`;
+        return;
+      }
+
+      reportsList.innerHTML = reports.map(r => `
+        <div class="bg-slate-950 p-5 rounded-xl border border-slate-800 hover:border-slate-700 transition">
+          <div class="flex justify-between items-start gap-4 flex-wrap">
+            <div class="flex items-center gap-2.5">
+              <img src="${r.members?.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150'}" class="w-7 h-7 rounded-full object-cover" />
+              <div>
+                <span class="font-semibold text-xs text-slate-200">${r.members?.name || 'Membre'}</span>
+                <span class="ml-2 text-[10px] bg-cyan-950 text-cyan-400 border border-cyan-800/60 px-2 py-0.5 rounded-full font-medium">
+                  ${r.sprint_name}
+                </span>
+              </div>
+            </div>
+            <span class="text-[11px] text-slate-500">
+              ${new Date(r.created_at).toLocaleDateString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          </div>
+
+          <p class="text-xs leading-relaxed text-slate-300 mt-3 whitespace-pre-line">${r.summary}</p>
+
+          ${r.blockers ? `
+            <div class="mt-3 text-xs bg-amber-950/30 border border-amber-900/40 p-2.5 rounded-lg text-amber-300/90 flex items-start gap-2">
+              <i class="fa-solid fa-triangle-exclamation mt-0.5 text-amber-400"></i>
+              <div><strong class="font-semibold">Blocage rencontré :</strong> ${r.blockers}</div>
+            </div>
+          ` : ''}
+
+          ${r.deliverable_url ? `
+            <div class="mt-3 pt-2 border-t border-slate-900 flex justify-end">
+              <a href="${r.deliverable_url}" target="_blank" class="inline-flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 font-medium transition">
+                <i class="fa-solid fa-link"></i>
+                Consulter le livrable →
+              </a>
+            </div>
+          ` : ''}
+        </div>
+      `).join('');
+    }
+
+    // Set Active User State
+    function setAuthenticatedUser(user) {
+      currentUser = user;
+      btnGithubLogin.classList.add('hidden');
+      userProfileBar.classList.remove('hidden');
+      userActionBox.classList.remove('hidden');
+      formLockNotice.classList.add('hidden');
+      reportForm.classList.remove('hidden');
+
+      userAvatar.src = user.avatar_url;
+      userName.textContent = user.name;
+      actionBoxUsername.textContent = user.name;
+      
+      inputProgress.value = user.progress || 50;
+      rangeValueLabel.textContent = `${user.progress || 50}%`;
+
+      // Sync into members list
+      const idx = members.findIndex(m => m.id === user.id);
+      if (idx !== -1) {
+        members[idx] = { ...members[idx], ...user };
+      } else {
+        members.unshift(user);
+      }
+      renderMembers();
+    }
+
+    // Toggle Demo Mode
+    function toggleDemo() {
+      if (demoMode) {
+        demoMode = false;
+        currentUser = null;
+        demoBtnText.textContent = "Simuler Connexion";
+        btnToggleDemo.className = "px-3 py-1.5 text-xs font-medium rounded-lg border bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 transition flex items-center gap-2";
+        btnGithubLogin.classList.remove('hidden');
+        userProfileBar.classList.add('hidden');
+        userActionBox.classList.add('hidden');
+        formLockNotice.classList.remove('hidden');
+        reportForm.classList.add('hidden');
+        showStatus('Déconnecté du mode démo.', 'info');
+      } else {
+        demoMode = true;
+        demoBtnText.textContent = "Mode Démo Actif";
+        btnToggleDemo.className = "px-3 py-1.5 text-xs font-medium rounded-lg border bg-amber-500/10 border-amber-500/50 text-amber-400 hover:bg-amber-500/20 transition flex items-center gap-2";
+        setAuthenticatedUser({
+          id: "m-3",
+          name: "Jordan P. (Démo)",
+          avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
+          skill: "Supabase & Web Security",
+          progress: 92,
+          streak: 19,
+          sos_active: false,
+          sos_message: "",
+          badges: ["Pionnier 🚀", "DB Wizard 🧙‍♂️"]
+        });
+        showStatus('Connecté en tant que Jordan P. (Mode Démo)');
+      }
+    }
+
+    // Event Listeners
+    window.addEventListener('DOMContentLoaded', () => {
+      cfgUrl.value = DEFAULT_SUPABASE_URL;
+      cfgKey.value = DEFAULT_SUPABASE_ANON_KEY;
+      initSupabase();
+      renderMembers();
+      renderReports();
+
+      // Config drawer toggle
+      btnToggleConfig.addEventListener('click', () => {
+        configDrawer.classList.toggle('hidden');
+      });
+
+      // Demo login toggle
+      btnToggleDemo.addEventListener('click', toggleDemo);
+      btnFormDemoTrigger.addEventListener('click', toggleDemo);
+
+      // GitHub OAuth Login
+      btnGithubLogin.addEventListener('click', async () => {
+        if (!supabaseClient) {
+          showStatus("Veuillez vérifier vos clés Supabase API.", "error");
+          return;
+        }
+        try {
+          const { error } = await supabaseClient.auth.signInWithOAuth({
+            provider: 'github',
+            options: { redirectTo: window.location.origin }
+          });
+          if (error) throw error;
+        } catch (err) {
+          showStatus("Erreur OAuth GitHub : " + err.message, "error");
+          toggleDemo();
+        }
+      });
+
+      // Logout
+      btnLogout.addEventListener('click', () => {
+        if (supabaseClient) supabaseClient.auth.signOut();
+        toggleDemo();
+      });
+
+      // Progress Slider Input
+      inputProgress.addEventListener('input', (e) => {
+        const val = e.target.value;
+        rangeValueLabel.textContent = `${val}%`;
+        if (currentUser) {
+          currentUser.progress = parseInt(val);
+          const member = members.find(m => m.id === currentUser.id);
+          if (member) member.progress = parseInt(val);
+          renderMembers();
+        }
+      });
+
+      // SOS Toggle Button
+      btnToggleSos.addEventListener('click', () => {
+        if (!currentUser) return;
+        currentUser.sos_active = !currentUser.sos_active;
+
+        if (currentUser.sos_active) {
+          sosBtnText.textContent = "S.O.S ACTIF";
+          btnToggleSos.className = "px-3 py-1 rounded text-xs font-bold transition flex items-center gap-1.5 bg-rose-600 text-white animate-pulse";
+          sosInputContainer.classList.remove('hidden');
+        } else {
+          sosBtnText.textContent = "Déclencher S.O.S";
+          btnToggleSos.className = "px-3 py-1 rounded text-xs font-bold transition flex items-center gap-1.5 bg-slate-800 text-slate-300 border border-slate-700";
+          sosInputContainer.classList.add('hidden');
+          currentUser.sos_message = "";
+        }
+
+        const member = members.find(m => m.id === currentUser.id);
+        if (member) {
+          member.sos_active = currentUser.sos_active;
+          member.sos_message = currentUser.sos_message;
+        }
+        renderMembers();
+      });
+
+      // SOS Message Input
+      inputSosMessage.addEventListener('input', (e) => {
+        if (currentUser) {
+          currentUser.sos_message = e.target.value;
+          const member = members.find(m => m.id === currentUser.id);
+          if (member) member.sos_message = e.target.value;
+          renderMembers();
+        }
+      });
+
+      // Report Submission Form
+      reportForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (!currentUser) return;
+
+        const sprintName = document.getElementById('input-sprint-name').value;
+        const summary = document.getElementById('input-summary').value;
+        const blockers = document.getElementById('input-blockers').value;
+        const deliverable = document.getElementById('input-deliverable').value;
+
+        const newReport = {
+          id: "r-" + Date.now(),
+          sprint_name: sprintName,
+          summary: summary,
+          blockers: blockers || null,
+          deliverable_url: deliverable || null,
+          created_at: new Date().toISOString(),
+          members: {
+            name: currentUser.name,
+            avatar_url: currentUser.avatar_url
+          }
+        };
+
+        reports.unshift(newReport);
+        renderReports();
+
+        document.getElementById('input-summary').value = "";
+        document.getElementById('input-blockers').value = "";
+        document.getElementById('input-deliverable').value = "";
+
+        showStatus("Bilan publié avec succès dans le Coffre !");
+      });
+
+      // Manual Refresh
+      btnRefreshData.addEventListener('click', () => {
+        renderMembers();
+        renderReports();
+        showStatus("Données de l'application réactualisées.");
+      });
+    });
   </script>
 </body>
 </html>
