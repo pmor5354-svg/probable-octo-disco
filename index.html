@@ -19,7 +19,14 @@
 </head>
 <body class="h-full flex flex-col font-sans antialiased bg-slate-950 text-slate-100 overflow-x-hidden">
 
-  <!-- Navigation -->
+  <script>
+    // Configuration Supabase intégrée
+    const SUPABASE_URL = "https://eorzabxddxhxuepxmyrc.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_z-cFf2q7MIErLOmXcY8z6A_cQLLf6Sj";
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  </script>
+
+  <!-- Top Navigation Bar -->
   <header class="bg-slate-900/80 backdrop-blur border-b border-slate-800 sticky top-0 z-40">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16 gap-2">
@@ -58,19 +65,6 @@
     </div>
   </header>
 
-  <!-- Bannière d'erreur de connexion -->
-  <div id="errorBanner" class="hidden bg-rose-950/60 border-b border-rose-500/30 text-rose-200 text-xs px-4 py-2.5">
-    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center gap-2 justify-between">
-      <div>
-        <p id="errorHint" class="font-semibold">Une erreur s'est produite</p>
-        <p id="errorDetail" class="text-rose-300/80 break-words mt-0.5"></p>
-      </div>
-      <button type="button" onclick="refresh(true)" class="self-start sm:self-auto px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 font-semibold">
-        Réessayer
-      </button>
-    </div>
-  </div>
-
   <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
     <!-- Bannière d'inscription -->
@@ -90,7 +84,7 @@
           </div>
           <div class="flex-1">
             <label for="regGoal" class="sr-only">Votre objectif</label>
-            <input type="text" id="regGoal" required maxlength="80" placeholder="Ex: Développeur Fullstack / Finance / Closing" class="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 text-sm">
+            <input type="text" id="regGoal" required maxlength="80" placeholder="Ex: Finance / Audit / Dev Web" class="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 text-sm">
           </div>
           <button type="submit" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-6 py-2.5 rounded-xl transition shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 text-sm">
             <i class="fa-solid fa-user-plus"></i> Rejoindre le Groupe
@@ -104,7 +98,7 @@
 
     <!-- Tableau de bord personnel -->
     <section id="userDashboard" class="hidden grid grid-cols-1 md:grid-cols-3 gap-4">
-      <!-- Card 1: Aujourd'hui -->
+      <!-- Card 1: Émargement -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between space-y-4">
         <div class="flex items-center justify-between">
           <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Émargement du Jour</span>
@@ -119,7 +113,7 @@
         </button>
       </div>
 
-      <!-- Card 2: Feuille de route -->
+      <!-- Card 2: Cap Janvier 2027 -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between space-y-4">
         <div class="flex items-center justify-between">
           <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Cap Janvier 2027</span>
@@ -132,28 +126,27 @@
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <label for="overallSlider" class="sr-only">Ma progression</label>
           <input type="range" id="overallSlider" min="0" max="100" value="0"
                  oninput="previewProgress(this.value)" onchange="saveProgress(this.value)"
                  class="w-full accent-emerald-500 cursor-pointer">
         </div>
       </div>
 
-      <!-- Card 3: Binôme -->
+      <!-- Card 3: Sprint / Kudos -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between space-y-4">
         <div class="flex items-center justify-between">
           <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Sprint Bi-Hebdomadaire</span>
           <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-teal-400 border border-slate-700">14 Jours</span>
         </div>
         <div>
-          <p class="text-xs text-slate-400 mb-1">Binôme d'Équipe</p>
+          <p class="text-xs text-slate-400 mb-1">Binôme / Équipe</p>
           <div class="flex items-center gap-3 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
             <div class="w-8 h-8 rounded-full bg-teal-500/20 text-teal-300 flex items-center justify-center font-bold text-xs">
               <i class="fa-solid fa-user-group"></i>
             </div>
             <div class="overflow-hidden">
-              <p id="buddyName" class="text-sm font-semibold text-slate-200 truncate">Aucun binôme assigné</p>
-              <p id="buddyGoal" class="text-[11px] text-slate-500 truncate">Rejoignez un autre membre</p>
+              <p id="buddyName" class="text-sm font-semibold text-slate-200 truncate">Groupe Connecté</p>
+              <p id="buddyGoal" class="text-[11px] text-slate-500 truncate">Progression partagée</p>
             </div>
           </div>
         </div>
@@ -163,20 +156,23 @@
       </div>
     </section>
 
-    <!-- Liste des membres -->
+    <!-- Membres du groupe synchronisés en temps réel -->
     <section class="space-y-4">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
         <div>
           <h2 class="text-xl font-bold text-white flex items-center gap-2">
             <i class="fa-solid fa-users text-emerald-400"></i> Membres du Sprint Groupe
           </h2>
-          <p id="membersSubtitle" class="text-xs text-slate-400">Liste des apprenants enregistrés</p>
+          <p class="text-xs text-slate-400">Synchronisé en direct avec tous vos potes</p>
         </div>
         <div class="flex items-center gap-2 text-xs">
           <span class="flex items-center gap-1.5 px-3 py-1 bg-slate-900 border border-slate-800 rounded-lg text-slate-300">
             <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
             <span id="memberCount">0 membre(s)</span>
           </span>
+          <button onclick="fetchMembers()" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 border border-slate-700 font-medium">
+            <i class="fa-solid fa-rotate"></i>
+          </button>
         </div>
       </div>
 
@@ -185,79 +181,49 @@
       <div id="emptyMembersNotice" class="hidden bg-slate-900/40 border border-dashed border-slate-800 rounded-2xl p-8 text-center space-y-3">
         <i class="fa-solid fa-user-slash text-4xl text-slate-600"></i>
         <h3 class="text-base font-semibold text-slate-300">Aucun membre enregistré pour l'instant</h3>
-        <p class="text-xs text-slate-500 max-w-sm mx-auto">Soyez le premier à rejoindre le groupe en utilisant le formulaire ci-dessus !</p>
-      </div>
-    </section>
-
-    <!-- Sections Coach & Fil d'Actualité -->
-    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4">
-      <!-- Coach IA -->
-      <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col h-96">
-        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
-          <div class="flex items-center gap-2">
-            <div class="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-              <i class="fa-solid fa-robot"></i>
-            </div>
-            <h3 class="font-bold text-white text-sm">Coach SkillSprint</h3>
-          </div>
-          <span class="text-[11px] text-slate-500">Réponses guidées</span>
-        </div>
-
-        <div id="chatMessages" class="flex-1 overflow-y-auto custom-scrollbar my-3 space-y-3 pr-2 text-xs">
-          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-slate-300 max-w-[85%]">
-            Bonjour ! Je suis le coach de la promotion 2027. Posez-moi vos questions sur le planning, la motivation ou l'organisation de vos études !
-          </div>
-        </div>
-
-        <form onsubmit="sendAiMessage(event)" class="flex gap-2 pt-2 border-t border-slate-800">
-          <label for="aiInput" class="sr-only">Votre question</label>
-          <input type="text" id="aiInput" required placeholder="Posez une question au coach..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500">
-          <button type="submit" aria-label="Envoyer" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 px-4 py-2 rounded-xl text-xs font-bold transition">
-            <i class="fa-solid fa-paper-plane"></i>
-          </button>
-        </form>
-      </div>
-
-      <!-- Feed / Signalements -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col h-96">
-        <div class="pb-3 border-b border-slate-800 flex items-center justify-between">
-          <h3 class="font-bold text-white text-sm flex items-center gap-2">
-            <i class="fa-solid fa-bullhorn text-amber-400"></i> Signalements & Kudos
-          </h3>
-          <span id="feedMode" class="text-[11px] text-slate-500">En direct</span>
-        </div>
-        <div id="feedList" class="flex-1 overflow-y-auto custom-scrollbar my-3 space-y-2 pr-1 text-xs">
-          <div class="p-2.5 rounded-xl bg-slate-950 border border-slate-800/80 text-slate-400">
-            Bienvenue dans le fil d'actualité du groupe !
-          </div>
-        </div>
+        <p class="text-xs text-slate-500 max-w-sm mx-auto">Inscrivez-vous ci-dessus pour apparaître dans le groupe !</p>
       </div>
     </section>
 
   </main>
 
   <script>
-    // Configuration & États
     let currentUser = JSON.parse(localStorage.getItem("skillsprint_current_user") || "null");
-    let members = JSON.parse(localStorage.getItem("skillsprint_members") || "[]");
-    let feedItems = JSON.parse(localStorage.getItem("skillsprint_feed") || "[]");
+    let members = [];
 
     document.addEventListener("DOMContentLoaded", () => {
       calculateDaysLeft();
+      fetchMembers();
       renderApp();
+
+      // Écoute des changements en direct via Supabase Realtime
+      supabaseClient
+        .channel('public:members')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, () => {
+          fetchMembers();
+        })
+        .subscribe();
     });
 
-    // Compte à rebours Janvier 2027
     function calculateDaysLeft() {
       const targetDate = new Date("2027-01-01T00:00:00");
-      const now = new Date();
-      const diffTime = targetDate - now;
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const diffDays = Math.ceil((targetDate - new Date()) / (1000 * 60 * 60 * 24));
       document.getElementById("daysLeft").innerText = diffDays > 0 ? `${diffDays} jours restants` : "Cap atteint !";
     }
 
-    // Inscription utilisateur
-    function registerUser(e) {
+    async function fetchMembers() {
+      const { data, error } = await supabaseClient
+        .from('members')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        members = data;
+        renderMembers();
+      }
+    }
+
+    async function registerUser(e) {
       e.preventDefault();
       const name = document.getElementById("regName").value.trim();
       const goal = document.getElementById("regGoal").value.trim();
@@ -268,31 +234,36 @@
         id: "usr_" + Date.now(),
         name: name,
         goal: goal,
-        workedToday: true,
+        worked_today: true,
         streak: 1,
-        progress: 0,
-        kudos: 0
+        progress: 0
       };
 
-      currentUser = newUser;
-      members.push(newUser);
+      const { error } = await supabaseClient.from('members').insert([newUser]);
 
-      saveState();
-      addFeedItem(`🎉 <strong>${name}</strong> a rejoint le sprint ! Objectif: ${goal}`);
-      renderApp();
+      if (!error) {
+        currentUser = newUser;
+        localStorage.setItem("skillsprint_current_user", JSON.stringify(currentUser));
+        await fetchMembers();
+        renderApp();
+      } else {
+        alert("Erreur lors de l'enregistrement : " + error.message);
+      }
     }
 
-    function toggleTodayWork() {
+    async function toggleTodayWork() {
       if (!currentUser) return;
-      currentUser.workedToday = !currentUser.workedToday;
-      if (currentUser.workedToday) {
-        currentUser.streak += 1;
-        addFeedItem(`🔥 <strong>${currentUser.name}</strong> a validé sa journée de travail !`);
-      } else {
-        currentUser.streak = Math.max(0, currentUser.streak - 1);
-      }
-      updateUserInMembers();
-      saveState();
+      currentUser.worked_today = !currentUser.worked_today;
+      currentUser.streak += currentUser.worked_today ? 1 : -1;
+      if (currentUser.streak < 0) currentUser.streak = 0;
+
+      await supabaseClient.from('members').update({
+        worked_today: currentUser.worked_today,
+        streak: currentUser.streak
+      }).eq('id', currentUser.id);
+
+      localStorage.setItem("skillsprint_current_user", JSON.stringify(currentUser));
+      await fetchMembers();
       renderApp();
     }
 
@@ -301,27 +272,21 @@
       document.getElementById("myOverallBar").style.width = val + "%";
     }
 
-    function saveProgress(val) {
+    async function saveProgress(val) {
       if (!currentUser) return;
       currentUser.progress = parseInt(val);
-      updateUserInMembers();
-      saveState();
-      renderApp();
-    }
-
-    function triggerSOS() {
-      if (!currentUser) return;
-      const msg = prompt("Expliquez votre blocage au groupe :");
-      if (msg) {
-        addFeedItem(`🚨 <strong>SOS de ${currentUser.name}</strong>: "${msg}"`);
-        renderFeed();
-      }
+      await supabaseClient.from('members').update({ progress: currentUser.progress }).eq('id', currentUser.id);
+      localStorage.setItem("skillsprint_current_user", JSON.stringify(currentUser));
+      await fetchMembers();
     }
 
     function sendKudosToGroup() {
-      if (!currentUser) return;
-      addFeedItem(`👏 <strong>${currentUser.name}</strong> a envoyé des Kudos à tout le groupe !`);
-      renderFeed();
+      alert("👏 Kudos envoyés au groupe !");
+    }
+
+    function triggerSOS() {
+      const msg = prompt("Quel est votre blocage ?");
+      if (msg) alert("🚨 SOS envoyé !");
     }
 
     function logout() {
@@ -330,49 +295,27 @@
       renderApp();
     }
 
-    function updateUserInMembers() {
-      const idx = members.findIndex(m => m.id === currentUser.id);
-      if (idx !== -1) members[idx] = currentUser;
-    }
-
-    function saveState() {
-      localStorage.setItem("skillsprint_current_user", JSON.stringify(currentUser));
-      localStorage.setItem("skillsprint_members", JSON.stringify(members));
-      localStorage.setItem("skillsprint_feed", JSON.stringify(feedItems));
-    }
-
-    function addFeedItem(htmlContent) {
-      feedItems.unshift({ id: Date.now(), content: htmlContent });
-      if (feedItems.length > 20) feedItems.pop();
-      localStorage.setItem("skillsprint_feed", JSON.stringify(feedItems));
-    }
-
-    // Affichage global
     function renderApp() {
       const joinBanner = document.getElementById("joinBanner");
       const userDashboard = document.getElementById("userDashboard");
       const userProfileHeader = document.getElementById("userProfileHeader");
-      const sosBtn = document.getElementById("sosBtn");
 
       if (currentUser) {
         joinBanner.classList.add("hidden");
         userDashboard.classList.remove("hidden");
         userProfileHeader.classList.remove("hidden");
         userProfileHeader.classList.add("flex");
-        sosBtn.classList.remove("hidden");
-        sosBtn.classList.add("flex");
 
         document.getElementById("userName").innerText = currentUser.name;
         document.getElementById("userAvatar").innerText = currentUser.name.charAt(0);
         document.getElementById("myGoalTitle").innerText = currentUser.goal;
-        document.getElementById("streakText").innerText = `${currentUser.streak} jour(s)`;
-        
+        document.getElementById("streakText").innerText = `${currentUser.streak || 0} jour(s)`;
         previewProgress(currentUser.progress || 0);
         document.getElementById("overallSlider").value = currentUser.progress || 0;
 
         const badge = document.getElementById("todayBadge");
         const btnText = document.getElementById("markBtnText");
-        if (currentUser.workedToday) {
+        if (currentUser.worked_today) {
           badge.className = "text-xs px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
           badge.innerText = "🟢 Validé";
           btnText.innerText = "Journée validée";
@@ -385,17 +328,13 @@
         joinBanner.classList.remove("hidden");
         userDashboard.classList.add("hidden");
         userProfileHeader.classList.add("hidden");
-        sosBtn.classList.add("hidden");
       }
-
-      renderMembers();
-      renderFeed();
     }
 
     function renderMembers() {
+      document.getElementById("memberCount").innerText = `${members.length} membre(s)`;
       const list = document.getElementById("membersList");
       const notice = document.getElementById("emptyMembersNotice");
-      document.getElementById("memberCount").innerText = `${members.length} membre(s)`;
 
       if (members.length === 0) {
         list.innerHTML = "";
@@ -408,7 +347,7 @@
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between space-y-3">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2.5">
-              <div class="w-9 h-9 rounded-full bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold text-sm">
+              <div class="w-9 h-9 rounded-full bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold text-sm uppercase">
                 ${m.name.charAt(0)}
               </div>
               <div>
@@ -416,7 +355,7 @@
                 <p class="text-[11px] text-slate-400 truncate max-w-[150px]">${m.goal}</p>
               </div>
             </div>
-            ${m.workedToday ? '<span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-semibold">🟢 Actif</span>' : '<span class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full">En repos</span>'}
+            ${m.worked_today ? '<span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-semibold">🟢 Actif</span>' : '<span class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full">En repos</span>'}
           </div>
 
           <div>
@@ -425,48 +364,11 @@
               <span class="font-bold text-emerald-400">${m.progress || 0}%</span>
             </div>
             <div class="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-800">
-              <div class="bg-emerald-500 h-full" style="width: ${m.progress || 0}%"></div>
+              <div class="bg-emerald-500 h-full transition-all duration-300" style="width: ${m.progress || 0}%"></div>
             </div>
           </div>
         </div>
       `).join("");
-    }
-
-    function renderFeed() {
-      const list = document.getElementById("feedList");
-      if (feedItems.length === 0) return;
-      list.innerHTML = feedItems.map(item => `
-        <div class="p-2.5 rounded-xl bg-slate-950 border border-slate-800/80 text-slate-300 text-xs">
-          ${item.content}
-        </div>
-      `).join("");
-    }
-
-    // Coach IA Simulatif
-    function sendAiMessage(e) {
-      e.preventDefault();
-      const input = document.getElementById("aiInput");
-      const msg = input.value.trim();
-      if (!msg) return;
-
-      const chat = document.getElementById("chatMessages");
-      chat.innerHTML += `
-        <div class="bg-emerald-500/10 border border-emerald-500/20 text-emerald-200 p-3 rounded-xl ml-auto max-w-[85%] text-xs">
-          ${msg}
-        </div>
-      `;
-
-      input.value = "";
-      chat.scrollTop = chat.scrollHeight;
-
-      setTimeout(() => {
-        chat.innerHTML += `
-          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-slate-300 max-w-[85%] text-xs">
-            Excellente question ! Pour maintenir un rythme régulier jusqu'en Janvier 2027, concentrez-vous sur des sessions quotidiennes de 45 minutes et faites un point bi-hebdomadaire avec votre binôme.
-          </div>
-        `;
-        chat.scrollTop = chat.scrollHeight;
-      }, 800);
     }
   </script>
 </body>
