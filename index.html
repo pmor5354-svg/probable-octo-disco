@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>PMG LEVELING</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #0b0c10;
+      --card-bg: #12141a;
+      --card-border: #232733;
+      --gold-primary: #d4af37;
+      --gold-light: #f3e5ab;
+      --gold-dark: #997a15;
+      --gold-glow: rgba(212, 175, 55, 0.15);
+      --text-main: #f0f2f5;
+      --text-muted: #8a92a3;
+      --deen-color: #d4af37;
+      --character-color: #4a90e2;
+      --life-color: #2ecc71;
+      --danger: #e74c3c;
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      padding-bottom: 90px;
+      line-height: 1.5;
+    }
+
+    /* HEADER */
+    header {
+      background: linear-gradient(180deg, #161822 0%, var(--bg-color) 100%);
+      padding: 20px 16px 12px 16px;
+      border-bottom: 1px solid var(--card-border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .brand-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1.3rem;
+      font-weight: 800;
+      letter-spacing: 2px;
+      color: var(--gold-primary);
+      text-shadow: 0 0 10px var(--gold-glow);
+    }
+
+    .motto {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--gold-light);
+      opacity: 0.8;
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+
+    .real-time-clock {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.05);
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid var(--card-border);
+    }
+
+    .program-progress-bar-container {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+
+    .program-progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--gold-dark), var(--gold-primary), var(--gold-light));
+      width: 0%;
+      transition: width 0.5s ease;
+    }
+
+    .program-dates {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* CONTAINER */
+    .container {
+      padding: 16px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* NAVIGATION BOTTOM (MOBILE FIRST) */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #12141a;
+      border-top: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0 14px 0;
+      z-index: 1000;
+    }
+
+    .nav-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      cursor: pointer;
+      width: 33%;
+    }
+
+    .nav-btn.active {
+      color: var(--gold-primary);
+    }
+
+    .nav-btn svg {
+      width: 22px;
+      height: 22px;
+      fill: currentColor;
+    }
+
+    /* CARDS */
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .card-title {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--gold-primary);
+      margin-bottom: 12px;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* SCORE DASHBOARD */
+    .score-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      text-align: center;
+    }
+
+    .score-box {
+      background: rgba(255, 255, 255, 0.03);
+      padding: 12px 8px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--card-border);
+    }
+
+    .score-value {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--gold-light);
+    }
+
+    .score-label {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    /* DATE PICKER BAR */
+    .date-navigator {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-md);
+      padding: 8px 12px;
+      margin-bottom: 16px;
+    }
+
+    .date-nav-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      border-radius: var(--radius-sm);
+      padding: 6px 12px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .current-date-display {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--gold-primary);
+    }
+
+    /* FILTER TABS */
+    .filter-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .tab-btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .tab-btn.active {
+      background: var(--gold-glow);
+      border-color: var(--gold-primary);
+      color: var(--gold-primary);
+    }
+
+    /* CHECKLIST ITEMS */
+    .pillar-header {
+      font-size: 0.8rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 8px 0 4px 0;
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pillar-deen { color: var(--deen-color); border-bottom: 1px solid rgba(212, 175, 55, 0.2); }
+    .pillar-character { color: var(--character-color); border-bottom: 1px solid rgba(74, 144, 226, 0.2); }
+    .pillar-life { color: var(--life-color); border-bottom: 1px solid rgba(46, 204, 113, 0.2); }
+
+    .task-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      margin-top: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .task-item.completed {
+      background: rgba(212, 175, 55, 0.05);
+      border-color: rgba(212, 175, 55, 0.3);
+    }
+
+    .task-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+    }
+
+    .custom-checkbox {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      border: 2px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .task-item.completed .custom-checkbox {
+      background: var(--gold-primary);
+      border-color: var(--gold-primary);
+    }
+
+    .custom-checkbox::after {
+      content: '✓';
+      color: #0b0c10;
+      font-weight: 900;
+      font-size: 14px;
+      display: none;
+    }
+
+    .task-item.completed .custom-checkbox::after {
+      display: block;
+    }
+
+    .task-content {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .task-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .task-item.completed .task-title {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+
+    .task-badge {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .tag-must {
+      color: #e74c3c;
+      font-weight: 700;
+    }
+
+    /* PAGE SECTIONS */
+    .page-section {
+      display: none;
+    }
+
+    .page-section.active {
+      display: block;
+    }
+
+    /* SETTINGS / EXPORT */
+    .btn {
+      width: 100%;
+      background: var(--gold-primary);
+      color: #0b0c10;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 12px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+      border: 1px solid var(--card-border);
+    }
+
+    /* HISTORY LIST */
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px;
+      border-bottom: 1px solid var(--card-border);
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-top">
+      <div class="brand-title">PMG LEVELING</div>
+      <div class="real-time-clock" id="clock">00:00:00</div>
+    </div>
+    <div class="motto">PUT ALLAH FIRST IN EVERYTHING</div>
+    
+    <div class="program-progress-bar-container">
+      <div class="program-progress-bar" id="program-bar"></div>
+    </div>
+    <div class="program-dates">
+      <span>01 SEPT 2026</span>
+      <span id="program-percent">0%</span>
+      <span>31 MARS 2027</span>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <div class="container">
+
+    <!-- PAGE 1: TODAY (CHECKLIST & HOME) -->
+    <div id="page-today" class="page-section active">
+
+      <!-- DASHBOARD SUMMARY -->
+      <div class="card">
+        <div class="card-title">
+          <span>Aujourd'hui</span>
+          <span id="completion-text" style="color: var(--gold-light);">0%</span>
+        </div>
+        <div class="score-grid">
+          <div class="score-box">
+            <div class="score-value" id="score-today">0/0</div>
+            <div class="score-label">Tâches</div>
+          </div>
+          <div class="score-box">
+            <div class="score-value" id="streak-count">0</div>
+            <div class="score-label">Série (Jours)</div>
+          </div>
+          <div class="score-box">
+            <div class="score-value" id="deen-score">0%</div>
+            <div class="score-label">Deen Score</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DATE NAVIGATOR -->
+      <div class="date-navigator">
+        <button class="date-nav-btn" onclick="changeDate(-1)">◄</button>
+        <span class="current-date-display" id="date-display">Aujourd'hui</span>
+        <button class="date-nav-btn" onclick="changeDate(1)">►</button>
+      </div>
+
+      <!-- FILTER TABS -->
+      <div class="filter-tabs">
+        <button class="tab-btn active" onclick="filterCategory('ALL', this)">Tous</button>
+        <button class="tab-btn" onclick="filterCategory('DEEN', this)">Deen</button>
+        <button class="tab-btn" onclick="filterCategory('CHARACTER', this)">Character</button>
+        <button class="tab-btn" onclick="filterCategory('STUDIES', this)">Études</button>
+        <button class="tab-btn" onclick="filterCategory('BUSINESS', this)">Business</button>
+        <button class="tab-btn" onclick="filterCategory('FITNESS', this)">Sport</button>
+      </div>
+
+      <!-- CHECKLIST ITEMS CONTAINER -->
+      <div id="checklist-container"></div>
+
+    </div>
+
+    <!-- PAGE 2: PROGRESS & HISTORY -->
+    <div id="page-progress" class="page-section">
+      <div class="card">
+        <div class="card-title">Progression Globale</div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">Historique des taux de complétion journaliers :</p>
+        <div id="history-container"></div>
+      </div>
+    </div>
+
+    <!-- PAGE 3: SETTINGS & DATA -->
+    <div id="page-settings" class="page-section">
+      <div class="card">
+        <div class="card-title">Sauvegarde & Données</div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+          Toutes tes données sont enregistrées localement dans ton navigateur. Tu peux exporter tes sauvegardes en fichier JSON.
+        </p>
+        <button class="btn" onclick="exportData()">Exporter les données (JSON)</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()">Importer un fichier JSON</button>
+        <input type="file" id="import-file" style="display: none;" onchange="importData(event)">
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM NAVIGATION BAR -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" onclick="switchPage('today', this)">
+      <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM17 84l-1.41-1.41L11 12.17l-2.59-2.58L7 11l4 4 6-6z"/></svg>
+      Today
+    </button>
+    <button class="nav-btn" onclick="switchPage('progress', this)">
+      <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+      Progrès
+    </button>
+    <button class="nav-btn" onclick="switchPage('settings', this)">
+      <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+      Réglages
+    </button>
+  </nav>
+
+  <!-- SCRIPT JS -->
+  <script>
+    // LISTE DES TÂCHES DU PROGRAMME PMG LEVELING
+    const TASKS_TEMPLATE = [
+      // PILIER 1: DEEN
+      { id: 'deen_fajr', pillar: 'DEEN', category: 'DEEN', title: 'Fajr à la mosquée à l\'heure', tag: 'MUST DO' },
+      { id: 'deen_istighfar', pillar: 'DEEN', category: 'DEEN', title: '1 000 Istighfar quotidien', tag: 'MUST DO' },
+      { id: 'deen_coran', pillar: 'DEEN', category: 'DEEN', title: 'Coran : 3-5 versets mémorisés / révision', tag: 'MUST DO' },
+      { id: 'deen_sadaqah', pillar: 'DEEN', category: 'DEEN', title: 'Aumône quotidienne (Sadaqah)', tag: 'MUST DO' },
+      { id: 'deen_adhkar', pillar: 'DEEN', category: 'DEEN', title: 'Adhkar du matin & du soir', tag: 'SHOULD DO' },
+      { id: 'deen_sunnah', pillar: 'DEEN', category: 'DEEN', title: 'Prières surérogatoires (Sunnah)', tag: 'SHOULD DO' },
+
+      // PILIER 2: CHARACTER
+      { id: 'char_gratitude', pillar: 'CHARACTER', category: 'CHARACTER', title: 'Pratiquer la gratitude', tag: 'MUST DO' },
+      { id: 'char_focus', pillar: 'CHARACTER', category: 'CHARACTER', title: 'Lancement immédiat du travail sans distraction', tag: 'MUST DO' },
+      { id: 'char_bilan', pillar: 'CHARACTER', category: 'CHARACTER', title: 'Bilan du soir de 3 minutes', tag: 'SHOULD DO' },
+
+      // PILIER 3: LIFE / STUDIES / BUSINESS / FITNESS / ENGLISH
+      { id: 'life_studies', pillar: 'LIFE', category: 'STUDIES', title: '2h de travail profond L2 Finance (Active recall / ex)', tag: 'MUST DO' },
+      { id: 'life_english', pillar: 'LIFE', category: 'ENGLISH', title: '15 min de conversation anglaise avec GPT', tag: 'MUST DO' },
+      { id: 'life_youtube', pillar: 'LIFE', category: 'BUSINESS', title: 'Création / Montage vidéo YouTube Faceless', tag: 'SHOULD DO' },
+      { id: 'life_fitness', pillar: 'LIFE', category: 'FITNESS', title: 'Renforcement musculaire / Pompes', tag: 'SHOULD DO' },
+      { id: 'life_money', pillar: 'LIFE', category: 'MONEY', title: 'Noter mes dépenses du jour', tag: 'SHOULD DO' }
+    ];
+
+    let currentDate = new Date();
+    let currentCategoryFilter = 'ALL';
+    let appData = JSON.parse(localStorage.getItem('PMG_LEVELING_DATA')) || {};
+
+    // REALTIME CLOCK & PROGRAM PROGRESS
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('clock').innerText = now.toLocaleTimeString('fr-FR');
+
+      // Program range: Sept 1, 2026 to Mar 31, 2027
+      const startDate = new Date('2026-09-01T00:00:00');
+      const endDate = new Date('2027-03-31T23:59:59');
+      
+      let pct = 0;
+      if (now >= startDate && now <= endDate) {
+        pct = Math.round(((now - startDate) / (endDate - startDate)) * 100);
+      } else if (now > endDate) {
+        pct = 100;
+      }
+      document.getElementById('program-bar').style.width = pct + '%';
+      document.getElementById('program-percent').innerText = pct + '%';
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    function getDateKey(d) {
+      return d.toISOString().split('T')[0];
+    }
+
+    function formatDateDisplay(d) {
+      const todayKey = getDateKey(new Date());
+      const dKey = getDateKey(d);
+      if (dKey === todayKey) return "Aujourd'hui";
+      return d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+    }
+
+    function changeDate(days) {
+      currentDate.setDate(currentDate.getDate() + days);
+      renderChecklist();
+    }
+
+    function switchPage(pageId, btn) {
+      document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('page-' + pageId).classList.add('active');
+      btn.classList.add('active');
+
+      if (pageId === 'progress') renderHistory();
+    }
+
+    function filterCategory(cat, btn) {
+      currentCategoryFilter = cat;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderChecklist();
+    }
+
+    function toggleTask(taskId) {
+      const dateKey = getDateKey(currentDate);
+      if (!appData[dateKey]) appData[dateKey] = {};
+      appData[dateKey][taskId] = !appData[dateKey][taskId];
+      
+      localStorage.setItem('PMG_LEVELING_DATA', JSON.stringify(appData));
+      renderChecklist();
+    }
+
+    function renderChecklist() {
+      const dateKey = getDateKey(currentDate);
+      const dayData = appData[dateKey] || {};
+      document.getElementById('date-display').innerText = formatDateDisplay(currentDate);
+
+      const container = document.getElementById('checklist-container');
+      container.innerHTML = '';
+
+      let totalTasks = 0;
+      let completedTasks = 0;
+      let deenTotal = 0;
+      let deenDone = 0;
+
+      const pillars = ['DEEN', 'CHARACTER', 'LIFE'];
+
+      pillars.forEach(pillar => {
+        let tasksInPillar = TASKS_TEMPLATE.filter(t => t.pillar === pillar);
+        if (currentCategoryFilter !== 'ALL') {
+          tasksInPillar = tasksInPillar.filter(t => t.category === currentCategoryFilter);
+        }
+
+        if (tasksInPillar.length > 0) {
+          const header = document.createElement('div');
+          header.className = `pillar-header pillar-${pillar.toLowerCase()}`;
+          header.innerText = pillar;
+          container.appendChild(header);
+
+          tasksInPillar.forEach(task => {
+            totalTasks++;
+            const isDone = !!dayData[task.id];
+            if (isDone) completedTasks++;
+
+            if (task.pillar === 'DEEN') {
+              deenTotal++;
+              if (isDone) deenDone++;
+            }
+
+            const item = document.createElement('div');
+            item.className = `task-item ${isDone ? 'completed' : ''}`;
+            item.onclick = () => toggleTask(task.id);
+
+            item.innerHTML = `
+              <div class="task-left">
+                <div class="custom-checkbox"></div>
+                <div class="task-content">
+                  <div class="task-title">${task.title}</div>
+                  <div class="task-badge">
+                    <span class="${task.tag === 'MUST DO' ? 'tag-must' : ''}">${task.tag}</span> • ${task.category}
+                  </div>
+                </div>
+              </div>
+            `;
+            container.appendChild(item);
+          });
+        }
+      });
+
+      // Update Scores
+      const pct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+      const deenPct = deenTotal > 0 ? Math.round((deenDone / deenTotal) * 100) : 0;
+
+      document.getElementById('completion-text').innerText = pct + '%';
+      document.getElementById('score-today').innerText = `${completedTasks}/${totalTasks}`;
+      document.getElementById('deen-score').innerText = deenPct + '%';
+
+      // Calculate simple streak
+      let streak = 0;
+      let checkDate = new Date();
+      while (true) {
+        let k = getDateKey(checkDate);
+        let d = appData[k] || {};
+        let done = Object.values(d).filter(Boolean).length;
+        if (done > 0) {
+          streak++;
+          checkDate.setDate(checkDate.getDate() - 1);
+        } else {
+          break;
+        }
+      }
+      document.getElementById('streak-count').innerText = streak;
+    }
+
+    function renderHistory() {
+      const historyContainer = document.getElementById('history-container');
+      historyContainer.innerHTML = '';
+
+      const keys = Object.keys(appData).sort().reverse();
+      if (keys.length === 0) {
+        historyContainer.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem;">Aucun historique pour le moment.</p>';
+        return;
+      }
+
+      keys.forEach(k => {
+        const dayObj = appData[k];
+        const doneCount = Object.values(dayObj).filter(Boolean).length;
+        const total = TASKS_TEMPLATE.length;
+        const pct = Math.round((doneCount / total) * 100);
+
+        const div = document.createElement('div');
+        div.className = 'history-item';
+        div.innerHTML = `
+          <span>${k}</span>
+          <span style="color: var(--gold-primary); font-weight: bold;">${pct}% (${doneCount}/${total})</span>
+        `;
+        historyContainer.appendChild(div);
+      });
+    }
+
+    function exportData() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `PMG_LEVELING_BACKUP_${getDateKey(new Date())}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function importData(event) {
+      const fileReader = new FileReader();
+      fileReader.onload = function(e) {
+        try {
+          const imported = JSON.parse(e.target.result);
+          appData = imported;
+          localStorage.setItem('PMG_LEVELING_DATA', JSON.stringify(appData));
+          renderChecklist();
+          alert("Données importées avec succès !");
+        } catch (err) {
+          alert("Erreur lors de l'importation du fichier.");
+        }
+      };
+      fileReader.readAsText(event.target.files[0]);
+    }
+
+    // INITIAL RENDER
+    renderChecklist();
+  </script>
+</body>
+</html>
