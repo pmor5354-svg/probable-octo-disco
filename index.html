@@ -2,743 +2,862 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>PMG LEVELING</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkillSprint Pro - Dashboard d'Apprentissage & Accountability</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- React & ReactDOM CDN -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- Babel Standalone pour exécuter le JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
   <style>
-    :root {
-      --bg-color: #0b0c10;
-      --card-bg: #12141a;
-      --card-border: #232733;
-      --gold-primary: #d4af37;
-      --gold-light: #f3e5ab;
-      --gold-dark: #997a15;
-      --gold-glow: rgba(212, 175, 55, 0.15);
-      --text-main: #f0f2f5;
-      --text-muted: #8a92a3;
-      --deen-color: #d4af37;
-      --character-color: #4a90e2;
-      --life-color: #2ecc71;
-      --danger: #e74c3c;
-      --radius-lg: 16px;
-      --radius-md: 12px;
-      --radius-sm: 8px;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      -webkit-tap-highlight-color: transparent;
-    }
-
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
     body {
-      background-color: var(--bg-color);
-      color: var(--text-main);
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      min-height: 100vh;
-      padding-bottom: 90px;
-      line-height: 1.5;
-    }
-
-    /* HEADER */
-    header {
-      background: linear-gradient(180deg, #161822 0%, var(--bg-color) 100%);
-      padding: 20px 16px 12px 16px;
-      border-bottom: 1px solid var(--card-border);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      backdrop-filter: blur(10px);
-    }
-
-    .header-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-
-    .brand-title {
-      font-family: 'Cinzel', serif;
-      font-size: 1.3rem;
-      font-weight: 800;
-      letter-spacing: 2px;
-      color: var(--gold-primary);
-      text-shadow: 0 0 10px var(--gold-glow);
-    }
-
-    .motto {
-      font-size: 0.65rem;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      color: var(--gold-light);
-      opacity: 0.8;
-      margin-bottom: 12px;
-      font-weight: 600;
-    }
-
-    .real-time-clock {
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      background: rgba(255, 255, 255, 0.05);
-      padding: 4px 10px;
-      border-radius: 20px;
-      border: 1px solid var(--card-border);
-    }
-
-    .program-progress-bar-container {
-      width: 100%;
-      height: 6px;
-      background: rgba(255, 255, 255, 0.08);
-      border-radius: 10px;
-      overflow: hidden;
-      margin-top: 6px;
-    }
-
-    .program-progress-bar {
-      height: 100%;
-      background: linear-gradient(90deg, var(--gold-dark), var(--gold-primary), var(--gold-light));
-      width: 0%;
-      transition: width 0.5s ease;
-    }
-
-    .program-dates {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.7rem;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-
-    /* CONTAINER */
-    .container {
-      padding: 16px;
-      max-width: 600px;
-      margin: 0 auto;
-    }
-
-    /* NAVIGATION BOTTOM (MOBILE FIRST) */
-    .bottom-nav {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: #12141a;
-      border-top: 1px solid var(--card-border);
-      display: flex;
-      justify-content: space-around;
-      padding: 10px 0 14px 0;
-      z-index: 1000;
-    }
-
-    .nav-btn {
-      background: none;
-      border: none;
-      color: var(--text-muted);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      font-size: 0.7rem;
-      font-weight: 600;
-      cursor: pointer;
-      width: 33%;
-    }
-
-    .nav-btn.active {
-      color: var(--gold-primary);
-    }
-
-    .nav-btn svg {
-      width: 22px;
-      height: 22px;
-      fill: currentColor;
-    }
-
-    /* CARDS */
-    .card {
-      background-color: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius-lg);
-      padding: 16px;
-      margin-bottom: 16px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-    }
-
-    .card-title {
-      font-size: 0.9rem;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--gold-primary);
-      margin-bottom: 12px;
-      font-weight: 700;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    /* SCORE DASHBOARD */
-    .score-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      text-align: center;
-    }
-
-    .score-box {
-      background: rgba(255, 255, 255, 0.03);
-      padding: 12px 8px;
-      border-radius: var(--radius-md);
-      border: 1px solid var(--card-border);
-    }
-
-    .score-value {
-      font-size: 1.4rem;
-      font-weight: 800;
-      color: var(--gold-light);
-    }
-
-    .score-label {
-      font-size: 0.68rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      margin-top: 2px;
-    }
-
-    /* DATE PICKER BAR */
-    .date-navigator {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius-md);
-      padding: 8px 12px;
-      margin-bottom: 16px;
-    }
-
-    .date-nav-btn {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--card-border);
-      color: var(--text-main);
-      border-radius: var(--radius-sm);
-      padding: 6px 12px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .current-date-display {
-      font-size: 0.9rem;
-      font-weight: 700;
-      color: var(--gold-primary);
-    }
-
-    /* FILTER TABS */
-    .filter-tabs {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
-      overflow-x: auto;
-      padding-bottom: 4px;
-    }
-
-    .tab-btn {
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid var(--card-border);
-      color: var(--text-muted);
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-
-    .tab-btn.active {
-      background: var(--gold-glow);
-      border-color: var(--gold-primary);
-      color: var(--gold-primary);
-    }
-
-    /* CHECKLIST ITEMS */
-    .pillar-header {
-      font-size: 0.8rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      padding: 8px 0 4px 0;
-      margin-top: 12px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .pillar-deen { color: var(--deen-color); border-bottom: 1px solid rgba(212, 175, 55, 0.2); }
-    .pillar-character { color: var(--character-color); border-bottom: 1px solid rgba(74, 144, 226, 0.2); }
-    .pillar-life { color: var(--life-color); border-bottom: 1px solid rgba(46, 204, 113, 0.2); }
-
-    .task-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius-md);
-      padding: 12px 14px;
-      margin-top: 8px;
-      transition: all 0.2s ease;
-    }
-
-    .task-item.completed {
-      background: rgba(212, 175, 55, 0.05);
-      border-color: rgba(212, 175, 55, 0.3);
-    }
-
-    .task-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex: 1;
-    }
-
-    .custom-checkbox {
-      width: 24px;
-      height: 24px;
-      border-radius: 6px;
-      border: 2px solid var(--card-border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.2s;
-      flex-shrink: 0;
-    }
-
-    .task-item.completed .custom-checkbox {
-      background: var(--gold-primary);
-      border-color: var(--gold-primary);
-    }
-
-    .custom-checkbox::after {
-      content: '✓';
-      color: #0b0c10;
-      font-weight: 900;
-      font-size: 14px;
-      display: none;
-    }
-
-    .task-item.completed .custom-checkbox::after {
-      display: block;
-    }
-
-    .task-content {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .task-title {
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--text-main);
-    }
-
-    .task-item.completed .task-title {
-      text-decoration: line-through;
-      color: var(--text-muted);
-    }
-
-    .task-badge {
-      font-size: 0.65rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      margin-top: 2px;
-    }
-
-    .tag-must {
-      color: #e74c3c;
-      font-weight: 700;
-    }
-
-    /* PAGE SECTIONS */
-    .page-section {
-      display: none;
-    }
-
-    .page-section.active {
-      display: block;
-    }
-
-    /* SETTINGS / EXPORT */
-    .btn {
-      width: 100%;
-      background: var(--gold-primary);
-      color: #0b0c10;
-      border: none;
-      border-radius: var(--radius-md);
-      padding: 12px;
-      font-weight: 700;
-      font-size: 0.9rem;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-
-    .btn-secondary {
-      background: rgba(255, 255, 255, 0.08);
-      color: var(--text-main);
-      border: 1px solid var(--card-border);
-    }
-
-    /* HISTORY LIST */
-    .history-item {
-      display: flex;
-      justify-content: space-between;
-      padding: 10px;
-      border-bottom: 1px solid var(--card-border);
-      font-size: 0.85rem;
+      font-family: 'Plus Jakarta Sans', sans-serif;
     }
   </style>
 </head>
-<body>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
 
-  <!-- HEADER -->
-  <header>
-    <div class="header-top">
-      <div class="brand-title">PMG LEVELING</div>
-      <div class="real-time-clock" id="clock">00:00:00</div>
-    </div>
-    <div class="motto">PUT ALLAH FIRST IN EVERYTHING</div>
-    
-    <div class="program-progress-bar-container">
-      <div class="program-progress-bar" id="program-bar"></div>
-    </div>
-    <div class="program-dates">
-      <span>01 SEPT 2026</span>
-      <span id="program-percent">0%</span>
-      <span>31 MARS 2027</span>
-    </div>
-  </header>
+  <div id="root"></div>
 
-  <!-- MAIN CONTAINER -->
-  <div class="container">
+  <script type="text/babel">
+    const { useState, useEffect } = React;
 
-    <!-- PAGE 1: TODAY (CHECKLIST & HOME) -->
-    <div id="page-today" class="page-section active">
-
-      <!-- DASHBOARD SUMMARY -->
-      <div class="card">
-        <div class="card-title">
-          <span>Aujourd'hui</span>
-          <span id="completion-text" style="color: var(--gold-light);">0%</span>
-        </div>
-        <div class="score-grid">
-          <div class="score-box">
-            <div class="score-value" id="score-today">0/0</div>
-            <div class="score-label">Tâches</div>
-          </div>
-          <div class="score-box">
-            <div class="score-value" id="streak-count">0</div>
-            <div class="score-label">Série (Jours)</div>
-          </div>
-          <div class="score-box">
-            <div class="score-value" id="deen-score">0%</div>
-            <div class="score-label">Deen Score</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- DATE NAVIGATOR -->
-      <div class="date-navigator">
-        <button class="date-nav-btn" onclick="changeDate(-1)">◄</button>
-        <span class="current-date-display" id="date-display">Aujourd'hui</span>
-        <button class="date-nav-btn" onclick="changeDate(1)">►</button>
-      </div>
-
-      <!-- FILTER TABS -->
-      <div class="filter-tabs">
-        <button class="tab-btn active" onclick="filterCategory('ALL', this)">Tous</button>
-        <button class="tab-btn" onclick="filterCategory('DEEN', this)">Deen</button>
-        <button class="tab-btn" onclick="filterCategory('CHARACTER', this)">Character</button>
-        <button class="tab-btn" onclick="filterCategory('STUDIES', this)">Études</button>
-        <button class="tab-btn" onclick="filterCategory('BUSINESS', this)">Business</button>
-        <button class="tab-btn" onclick="filterCategory('FITNESS', this)">Sport</button>
-      </div>
-
-      <!-- CHECKLIST ITEMS CONTAINER -->
-      <div id="checklist-container"></div>
-
-    </div>
-
-    <!-- PAGE 2: PROGRESS & HISTORY -->
-    <div id="page-progress" class="page-section">
-      <div class="card">
-        <div class="card-title">Progression Globale</div>
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">Historique des taux de complétion journaliers :</p>
-        <div id="history-container"></div>
-      </div>
-    </div>
-
-    <!-- PAGE 3: SETTINGS & DATA -->
-    <div id="page-settings" class="page-section">
-      <div class="card">
-        <div class="card-title">Sauvegarde & Données</div>
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
-          Toutes tes données sont enregistrées localement dans ton navigateur. Tu peux exporter tes sauvegardes en fichier JSON.
-        </p>
-        <button class="btn" onclick="exportData()">Exporter les données (JSON)</button>
-        <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()">Importer un fichier JSON</button>
-        <input type="file" id="import-file" style="display: none;" onchange="importData(event)">
-      </div>
-    </div>
-
-  </div>
-
-  <!-- BOTTOM NAVIGATION BAR -->
-  <nav class="bottom-nav">
-    <button class="nav-btn active" onclick="switchPage('today', this)">
-      <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM17 84l-1.41-1.41L11 12.17l-2.59-2.58L7 11l4 4 6-6z"/></svg>
-      Today
-    </button>
-    <button class="nav-btn" onclick="switchPage('progress', this)">
-      <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
-      Progrès
-    </button>
-    <button class="nav-btn" onclick="switchPage('settings', this)">
-      <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
-      Réglages
-    </button>
-  </nav>
-
-  <!-- SCRIPT JS -->
-  <script>
-    // LISTE DES TÂCHES DU PROGRAMME PMG LEVELING
-    const TASKS_TEMPLATE = [
-      // PILIER 1: DEEN
-      { id: 'deen_fajr', pillar: 'DEEN', category: 'DEEN', title: 'Fajr à la mosquée à l\'heure', tag: 'MUST DO' },
-      { id: 'deen_istighfar', pillar: 'DEEN', category: 'DEEN', title: '1 000 Istighfar quotidien', tag: 'MUST DO' },
-      { id: 'deen_coran', pillar: 'DEEN', category: 'DEEN', title: 'Coran : 3-5 versets mémorisés / révision', tag: 'MUST DO' },
-      { id: 'deen_sadaqah', pillar: 'DEEN', category: 'DEEN', title: 'Aumône quotidienne (Sadaqah)', tag: 'MUST DO' },
-      { id: 'deen_adhkar', pillar: 'DEEN', category: 'DEEN', title: 'Adhkar du matin & du soir', tag: 'SHOULD DO' },
-      { id: 'deen_sunnah', pillar: 'DEEN', category: 'DEEN', title: 'Prières surérogatoires (Sunnah)', tag: 'SHOULD DO' },
-
-      // PILIER 2: CHARACTER
-      { id: 'char_gratitude', pillar: 'CHARACTER', category: 'CHARACTER', title: 'Pratiquer la gratitude', tag: 'MUST DO' },
-      { id: 'char_focus', pillar: 'CHARACTER', category: 'CHARACTER', title: 'Lancement immédiat du travail sans distraction', tag: 'MUST DO' },
-      { id: 'char_bilan', pillar: 'CHARACTER', category: 'CHARACTER', title: 'Bilan du soir de 3 minutes', tag: 'SHOULD DO' },
-
-      // PILIER 3: LIFE / STUDIES / BUSINESS / FITNESS / ENGLISH
-      { id: 'life_studies', pillar: 'LIFE', category: 'STUDIES', title: '2h de travail profond L2 Finance (Active recall / ex)', tag: 'MUST DO' },
-      { id: 'life_english', pillar: 'LIFE', category: 'ENGLISH', title: '15 min de conversation anglaise avec GPT', tag: 'MUST DO' },
-      { id: 'life_youtube', pillar: 'LIFE', category: 'BUSINESS', title: 'Création / Montage vidéo YouTube Faceless', tag: 'SHOULD DO' },
-      { id: 'life_fitness', pillar: 'LIFE', category: 'FITNESS', title: 'Renforcement musculaire / Pompes', tag: 'SHOULD DO' },
-      { id: 'life_money', pillar: 'LIFE', category: 'MONEY', title: 'Noter mes dépenses du jour', tag: 'SHOULD DO' }
+    // --- DONNÉES SIMULÉES DE LA TRIBU ---
+    const INITIAL_MEMBERS = [
+      {
+        id: "m1",
+        name: "Moussa",
+        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
+        skill: "Montage DaVinci Resolve",
+        category: "Créatif & Média",
+        target: "Créer des vidéos 4K dynamiques",
+        progress: 80,
+        streak: 4,
+        kudos: 24,
+        assiduityScore: 100,
+        reportsSubmitted: 3,
+        reportsExpected: 3,
+        meetingsAttended: 3,
+        reportStatus: "Soumis",
+        sosActive: false,
+        badges: ["Pionnier 🚀", "Régularité d'Acier 🛡️", "Mentor 🤝"],
+        lastReport: {
+          sprint: "Sprint #3",
+          date: "30 Septembre 2026",
+          summary: "Maîtrise de la page Fusion, étalonnage de couleur (Color Grading) et export 4K.",
+          blockers: "Optimisation de la mémoire GPU pendant les rendus complexes.",
+          deliverableUrl: "https://youtube.com",
+          deliverableType: "Vidéo YouTube"
+        },
+        milestones: [
+          { id: "1", title: "Cut dynamique & raccourcis clavier", done: true },
+          { id: "2", title: "Étalonnage avec Node-tree", done: true },
+          { id: "3", title: "Création d'intro animée sur Fusion", done: true }
+        ]
+      },
+      {
+        id: "m2",
+        name: "Awa",
+        avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80",
+        skill: "Anglais Business & Conversation",
+        category: "Langues",
+        target: "Niveau B2 & Pitchs professionnels",
+        progress: 45,
+        streak: 2,
+        kudos: 12,
+        assiduityScore: 80,
+        reportsSubmitted: 2,
+        reportsExpected: 3,
+        meetingsAttended: 2,
+        reportStatus: "En attente",
+        sosActive: true,
+        sosMessage: "Besoin d'un partenaire pour pratiquer un pitch de 5 min en vocal ce soir !",
+        badges: ["Pionnier 🚀"],
+        lastReport: {
+          sprint: "Sprint #2",
+          date: "15 Septembre 2026",
+          summary: "Lecture de 2 articles HBR par jour et apprentissage du vocabulaire de la finance.",
+          blockers: "Blocage à l'oral sur les temps du passé.",
+          deliverableUrl: "https://clyp.it",
+          deliverableType: "Enregistrement Audio"
+        },
+        milestones: [
+          { id: "1", title: "30 min de conversation audio quotidienne", done: true },
+          { id: "2", title: "Apprendre 50 expressions idiomatiques", done: false },
+          { id: "3", title: "Enregistrer un pitch professionnel de 5 min", done: false }
+        ]
+      }
     ];
 
-    let currentDate = new Date();
-    let currentCategoryFilter = 'ALL';
-    let appData = JSON.parse(localStorage.getItem('PMG_LEVELING_DATA')) || {};
+    const MEETINGS_HISTORY = [
+      { id: "s1", name: "Sprint #1 Sync", date: "22 Août 2026" },
+      { id: "s2", name: "Sprint #2 Sync", date: "05 Septembre 2026" },
+      { id: "s3", name: "Sprint #3 Sync", date: "19 Septembre 2026" }
+    ];
 
-    // REALTIME CLOCK & PROGRAM PROGRESS
-    function updateClock() {
-      const now = new Date();
-      document.getElementById('clock').innerText = now.toLocaleTimeString('fr-FR');
+    function App() {
+      // ÉTAT INSCRIPTION
+      const [currentUser, setCurrentUser] = useState(null);
+      const [usernameInput, setUsernameInput] = useState("");
+      const [skillInput, setSkillInput] = useState("");
+      const [targetInput, setTargetInput] = useState("");
 
-      // Program range: Sept 1, 2026 to Mar 31, 2027
-      const startDate = new Date('2026-09-01T00:00:00');
-      const endDate = new Date('2027-03-31T23:59:59');
+      // ÉTAT APPLICATION
+      const [members, setMembers] = useState(INITIAL_MEMBERS);
+      const [activeTab, setActiveTab] = useState("dashboard"); // dashboard, assiduity, my-space, vault, ai-assistant
+      const [selectedMember, setSelectedMember] = useState(null);
+      const [newReport, setNewReport] = useState({ summary: "", blockers: "", deliverableUrl: "" });
+      const [sosInput, setSosInput] = useState("");
       
-      let pct = 0;
-      if (now >= startDate && now <= endDate) {
-        pct = Math.round(((now - startDate) / (endDate - startDate)) * 100);
-      } else if (now > endDate) {
-        pct = 100;
-      }
-      document.getElementById('program-bar').style.width = pct + '%';
-      document.getElementById('program-percent').innerText = pct + '%';
-    }
-    setInterval(updateClock, 1000);
-    updateClock();
+      // État Assistant IA
+      const [aiGenerating, setAiGenerating] = useState(false);
+      const [aiRoadmap, setAiRoadmap] = useState(null);
+      const [aiSummary, setAiSummary] = useState(null);
 
-    function getDateKey(d) {
-      return d.toISOString().split('T')[0];
-    }
+      const daysLeftInSprint = 4;
 
-    function formatDateDisplay(d) {
-      const todayKey = getDateKey(new Date());
-      const dKey = getDateKey(d);
-      if (dKey === todayKey) return "Aujourd'hui";
-      return d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
-    }
+      // Inscription utilisateur
+      const handleRegister = (e) => {
+        e.preventDefault();
+        if (!usernameInput.trim() || !skillInput.trim()) return;
 
-    function changeDate(days) {
-      currentDate.setDate(currentDate.getDate() + days);
-      renderChecklist();
-    }
+        const newUser = {
+          id: "user_" + Date.now(),
+          name: usernameInput.trim(),
+          avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(usernameInput)}`,
+          skill: skillInput.trim(),
+          category: "Auto-Apprentissage",
+          target: targetInput.trim() || "Maîtriser la compétence",
+          progress: 10,
+          streak: 1,
+          kudos: 0,
+          assiduityScore: 100,
+          reportsSubmitted: 1,
+          reportsExpected: 1,
+          meetingsAttended: 1,
+          reportStatus: "En attente",
+          sosActive: false,
+          badges: ["Nouveau Venu 🌟"],
+          lastReport: null,
+          milestones: [
+            { id: "1", title: "Définir mon plan d'étude de 14 jours", done: false },
+            { id: "2", title: "Pratique quotidienne autonome (30 min/j)", done: false },
+            { id: "3", title: "Créer un projet/livrable pour la démo", done: false }
+          ]
+        };
 
-    function switchPage(pageId, btn) {
-      document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
-      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-      document.getElementById('page-' + pageId).classList.add('active');
-      btn.classList.add('active');
+        setCurrentUser(newUser);
+        setMembers(prev => [newUser, ...prev]);
+      };
 
-      if (pageId === 'progress') renderHistory();
-    }
+      // basculer un jalon
+      const handleToggleMilestone = (memberId, milestoneId) => {
+        setMembers(prev => prev.map(m => {
+          if (m.id !== memberId) return m;
+          const updatedMs = m.milestones.map(ms => ms.id === milestoneId ? { ...ms, done: !ms.done } : ms);
+          const doneCount = updatedMs.filter(x => x.done).length;
+          const newProgress = Math.round((doneCount / updatedMs.length) * 100);
+          return { ...m, milestones: updatedMs, progress: newProgress };
+        }));
+      };
 
-    function filterCategory(cat, btn) {
-      currentCategoryFilter = cat;
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      renderChecklist();
-    }
-
-    function toggleTask(taskId) {
-      const dateKey = getDateKey(currentDate);
-      if (!appData[dateKey]) appData[dateKey] = {};
-      appData[dateKey][taskId] = !appData[dateKey][taskId];
-      
-      localStorage.setItem('PMG_LEVELING_DATA', JSON.stringify(appData));
-      renderChecklist();
-    }
-
-    function renderChecklist() {
-      const dateKey = getDateKey(currentDate);
-      const dayData = appData[dateKey] || {};
-      document.getElementById('date-display').innerText = formatDateDisplay(currentDate);
-
-      const container = document.getElementById('checklist-container');
-      container.innerHTML = '';
-
-      let totalTasks = 0;
-      let completedTasks = 0;
-      let deenTotal = 0;
-      let deenDone = 0;
-
-      const pillars = ['DEEN', 'CHARACTER', 'LIFE'];
-
-      pillars.forEach(pillar => {
-        let tasksInPillar = TASKS_TEMPLATE.filter(t => t.pillar === pillar);
-        if (currentCategoryFilter !== 'ALL') {
-          tasksInPillar = tasksInPillar.filter(t => t.category === currentCategoryFilter);
+      // Ajouter Bravo / Kudos
+      const handleAddKudos = (memberId) => {
+        setMembers(prev => prev.map(m => m.id === memberId ? { ...m, kudos: m.kudos + 1 } : m));
+        if (selectedMember && selectedMember.id === memberId) {
+          setSelectedMember(prev => ({ ...prev, kudos: prev.kudos + 1 }));
         }
+      };
 
-        if (tasksInPillar.length > 0) {
-          const header = document.createElement('div');
-          header.className = `pillar-header pillar-${pillar.toLowerCase()}`;
-          header.innerText = pillar;
-          container.appendChild(header);
+      // Soumettre Bilan
+      const handleSubmitReport = (e) => {
+        e.preventDefault();
+        setMembers(prev => prev.map(m => {
+          if (m.id === currentUser.id) {
+            return {
+              ...m,
+              reportStatus: "Soumis",
+              streak: m.streak + 1,
+              badges: Array.from(new Set([...m.badges, "Bilan Validé 📝"])),
+              lastReport: {
+                sprint: "Sprint Actuel",
+                date: "Aujourd'hui",
+                summary: newReport.summary,
+                blockers: newReport.blockers,
+                deliverableUrl: newReport.deliverableUrl,
+                deliverableType: "Projet Pratique"
+              }
+            };
+          }
+          return m;
+        }));
+        alert("🎉 Bilan bisemestriel soumis avec succès ! Vos amis peuvent désormais le consulter.");
+        setNewReport({ summary: "", blockers: "", deliverableUrl: "" });
+      };
 
-          tasksInPillar.forEach(task => {
-            totalTasks++;
-            const isDone = !!dayData[task.id];
-            if (isDone) completedTasks++;
+      // Activer / Désactiver S.O.S
+      const handleToggleSOS = (e) => {
+        e.preventDefault();
+        setMembers(prev => prev.map(m => {
+          if (m.id === currentUser.id) {
+            return { ...m, sosActive: !m.sosActive, sosMessage: sosInput };
+          }
+          return m;
+        }));
+        setSosInput("");
+      };
 
-            if (task.pillar === 'DEEN') {
-              deenTotal++;
-              if (isDone) deenDone++;
-            }
+      // Simulation Générateur de Plan d'Étude IA
+      const handleGenerateAIRoadmap = () => {
+        setAiGenerating(true);
+        setTimeout(() => {
+          setAiRoadmap([
+            { week: "Semaine 1 (J1 - J7)", goal: "Fondations & Pratique guidée", tasks: ["Suivre les 3 premiers modules théoriques", "Reproduire un exemple pas à pas", "Noter les 3 principales difficultés"] },
+            { week: "Semaine 2 (J8 - J14)", goal: "Création autonome & Livrable", tasks: ["Concevoir un mini-projet de zéro", "Préparer la démo de 3 minutes pour le groupe", "Soumettre le bilan sur SkillSprint"] }
+          ]);
+          setAiGenerating(false);
+        }, 1200);
+      };
 
-            const item = document.createElement('div');
-            item.className = `task-item ${isDone ? 'completed' : ''}`;
-            item.onclick = () => toggleTask(task.id);
+      // Simulation Synthèse de Réunion IA
+      const handleGenerateAISummary = () => {
+        setAiGenerating(true);
+        setTimeout(() => {
+          setAiSummary({
+            globalProgress: "Excellente dynamique d'équipe avec 75% d'objectifs validés.",
+            highlights: [
+              "Moussa a totalement automatisé l'étalonnage vidéo sur DaVinci.",
+              "Awa a augmenté son assiduité et recherche un partenaire de conversation."
+            ],
+            recommendedAgenda: [
+              "5 min : Tour de table & célébrations des Kudos",
+              "15 min : Démo des livrables (Moussa & Pablo)",
+              "10 min : Résolution collective des blocages (S.O.S)"
+            ]
+          });
+          setAiGenerating(false);
+        }, 1200);
+      };
 
-            item.innerHTML = `
-              <div class="task-left">
-                <div class="custom-checkbox"></div>
-                <div class="task-content">
-                  <div class="task-title">${task.title}</div>
-                  <div class="task-badge">
-                    <span class="${task.tag === 'MUST DO' ? 'tag-must' : ''}">${task.tag}</span> • ${task.category}
+      // 1. ÉCRAN D'INSCRIPTION / ONBOARDING
+      if (!currentUser) {
+        return (
+          <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+            <div className="max-w-md w-full bg-slate-900 border border-slate-800 p-8 rounded-3xl shadow-2xl space-y-6">
+              
+              <div className="text-center space-y-2">
+                <div className="inline-flex bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-3.5 rounded-2xl text-white font-black text-2xl shadow-lg shadow-blue-500/20 mb-2">
+                  ⚡ SK
+                </div>
+                <h1 className="text-2xl font-black text-white">SkillSprint Pro</h1>
+                <p className="text-xs text-slate-400">Dashboard collaboratif d'apprentissage par sprint de 14 jours.</p>
+              </div>
+
+              <form onSubmit={handleRegister} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    <i className="fa-solid fa-user text-blue-400 mr-1.5"></i> Ton Pseudo / Prénom
+                  </label>
+                  <input 
+                    type="text"
+                    required
+                    value={usernameInput}
+                    onChange={(e) => setUsernameInput(e.target.value)}
+                    placeholder="Ex: Pablo, Alex, Cheikh..."
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    <i className="fa-solid fa-graduation-cap text-indigo-400 mr-1.5"></i> La compétence que tu vas apprendre
+                  </label>
+                  <input 
+                    type="text"
+                    required
+                    value={skillInput}
+                    onChange={(e) => setSkillInput(e.target.value)}
+                    placeholder="Ex: Next.js & Supabase, Montage Vidéo, Espagnol..."
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    <i className="fa-solid fa-bullseye text-purple-400 mr-1.5"></i> Ton objectif final (en 3 mois)
+                  </label>
+                  <input 
+                    type="text"
+                    value={targetInput}
+                    onChange={(e) => setTargetInput(e.target.value)}
+                    placeholder="Ex: Lancer mon SaaS, Monter 5 vidéos, Parler couramment..."
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
+                  />
+                </div>
+
+                <button 
+                  type="submit"
+                  className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:opacity-90 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-500/20 transition mt-2 flex items-center justify-center gap-2">
+                  <span>🚀 Rejoindre le Groupe</span>
+                </button>
+              </form>
+
+              <div className="pt-4 border-t border-slate-800/80 text-[11px] text-center text-slate-500 space-y-1">
+                <p>⚡ Un compte-rendu toutes les 2 semaines</p>
+                <p>🤝 Évaluation réciproque & entraide</p>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // 2. APPLICATION PRINCIPALE (DASHBOARD)
+      return (
+        <div className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-16">
+          
+          {/* NAVIGATION HEADER */}
+          <header className="border-b border-slate-800 bg-slate-900/60 backdrop-blur-md sticky top-0 z-40">
+            <div className="max-w-7xl mx-auto px-4 py-3.5 flex flex-col md:flex-row items-center justify-between gap-4">
+              
+              <div className="flex items-center gap-3">
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-2.5 rounded-xl text-white font-black text-xl shadow-lg shadow-blue-500/20">
+                  ⚡ SK
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+                    SkillSprint Pro
+                  </h1>
+                  <p className="text-xs text-slate-400">
+                    Membre: <b className="text-blue-400">{currentUser.name}</b> ({currentUser.skill})
+                  </p>
+                </div>
+              </div>
+
+              {/* Countdown Banner & Team Streak */}
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 px-3.5 py-1.5 rounded-xl">
+                  <span className="text-amber-400 text-sm font-bold"><i className="fa-solid fa-fire"></i> Team Streak: 3</span>
+                  <span className="text-[10px] text-amber-300/70 hidden sm:inline">(6 sem. parfaites)</span>
+                </div>
+
+                <div className="flex items-center gap-2 bg-slate-800/80 border border-slate-700/60 px-3.5 py-1.5 rounded-xl">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                  </span>
+                  <span className="text-xs font-bold text-emerald-400">{daysLeftInSprint} jours restants</span>
+                </div>
+              </div>
+
+              {/* Navigation Tabs */}
+              <div className="flex bg-slate-900 border border-slate-800 p-1 rounded-xl text-xs overflow-x-auto max-w-full">
+                <button 
+                  onClick={() => setActiveTab("dashboard")}
+                  className={`px-3.5 py-1.5 rounded-lg font-semibold transition whitespace-nowrap ${activeTab === 'dashboard' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>
+                  🏠 Groupe
+                </button>
+                <button 
+                  onClick={() => setActiveTab("assiduity")}
+                  className={`px-3.5 py-1.5 rounded-lg font-semibold transition whitespace-nowrap ${activeTab === 'assiduity' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>
+                  🎯 Assiduité
+                </button>
+                <button 
+                  onClick={() => setActiveTab("vault")}
+                  className={`px-3.5 py-1.5 rounded-lg font-semibold transition whitespace-nowrap ${activeTab === 'vault' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>
+                  📦 Livrables
+                </button>
+                <button 
+                  onClick={() => setActiveTab("ai-assistant")}
+                  className={`px-3.5 py-1.5 rounded-lg font-semibold transition whitespace-nowrap ${activeTab === 'ai-assistant' ? 'bg-purple-600 text-white shadow' : 'text-purple-400 hover:text-white'}`}>
+                  🤖 IA Mentor
+                </button>
+                <button 
+                  onClick={() => setActiveTab("my-space")}
+                  className={`px-3.5 py-1.5 rounded-lg font-semibold transition whitespace-nowrap ${activeTab === 'my-space' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>
+                  📝 Mon Bilan
+                </button>
+              </div>
+
+            </div>
+          </header>
+
+          {/* MAIN CONTENT AREA */}
+          <main className="max-w-7xl mx-auto px-4 mt-8">
+            
+            {/* TAB 1: DASHBOARD DE GROUPE */}
+            {activeTab === "dashboard" && (
+              <div className="space-y-8">
+                
+                {/* Global KPI Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+                    <p className="text-xs font-medium text-slate-400">Progression Équipe</p>
+                    <p className="text-3xl font-extrabold text-blue-400 mt-1">
+                      {Math.round(members.reduce((acc, m) => acc + m.progress, 0) / members.length)}%
+                    </p>
+                    <p className="text-xs text-emerald-400 mt-1"><i className="fa-solid fa-arrow-trend-up"></i> +14% ce sprint</p>
+                  </div>
+
+                  <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+                    <p className="text-xs font-medium text-slate-400">Taux d'Assiduité</p>
+                    <p className="text-3xl font-extrabold text-emerald-400 mt-1">93.3%</p>
+                    <p className="text-xs text-slate-400 mt-1">Bilans & Présence réunions</p>
+                  </div>
+
+                  <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+                    <p className="text-xs font-medium text-slate-400">Appels S.O.S Actifs</p>
+                    <p className="text-3xl font-extrabold text-rose-400 mt-1">
+                      {members.filter(m => m.sosActive).length} Demande(s)
+                    </p>
+                    <p className="text-xs text-slate-400 mt-1">Entraide prioritaire</p>
+                  </div>
+
+                  <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+                    <p className="text-xs font-medium text-slate-400">Kudos / Bravo Échangés</p>
+                    <p className="text-3xl font-extrabold text-amber-400 mt-1">
+                      👏 {members.reduce((acc, m) => acc + m.kudos, 0)}
+                    </p>
+                    <p className="text-xs text-slate-400 mt-1">Encouragements reçus</p>
+                  </div>
+                </div>
+
+                {/* S.O.S Alert Banner (If Any) */}
+                {members.some(m => m.sosActive) && (
+                  <div className="bg-rose-500/10 border border-rose-500/30 p-5 rounded-2xl space-y-3">
+                    <h3 className="font-bold text-rose-400 text-sm flex items-center gap-2">
+                      <i className="fa-solid fa-triangle-exclamation animate-bounce"></i>
+                      Demande d'Aide Urgent (S.O.S Blocage) dans l'équipe :
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {members.filter(m => m.sosActive).map(m => (
+                        <div key={m.id} className="bg-slate-900 p-3.5 rounded-xl border border-rose-500/20 flex items-start gap-3">
+                          <img src={m.avatar} className="w-10 h-10 rounded-full object-cover border border-rose-500" />
+                          <div>
+                            <p className="text-xs font-bold text-white">{m.name} ({m.skill})</p>
+                            <p className="text-xs text-rose-300 mt-1">"{m.sosMessage || 'Bloqué(e) sur un point technique'}"</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Team Members Cards */}
+                <div>
+                  <h2 className="text-lg font-bold text-white mb-4 flex items-center justify-between">
+                    <span>👥 Membres de la Tribu ({members.length})</span>
+                    <span className="text-xs text-slate-400 font-normal">Cliquez sur un membre pour voir son profil complet</span>
+                  </h2>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {members.map((m) => (
+                      <div 
+                        key={m.id}
+                        onClick={() => setSelectedMember(m)}
+                        className={`bg-slate-900 border ${m.id === currentUser.id ? 'border-blue-500/50 bg-blue-950/10' : 'border-slate-800'} hover:border-slate-700 transition rounded-2xl p-6 cursor-pointer flex flex-col justify-between group relative overflow-hidden`}>
+                        
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <img src={m.avatar} className="w-12 h-12 rounded-full object-cover border-2 border-slate-700 group-hover:border-blue-500 transition bg-slate-800" />
+                              <div>
+                                <h3 className="font-bold text-white group-hover:text-blue-400 transition flex items-center gap-1.5">
+                                  {m.name}
+                                  {m.id === currentUser.id && <span className="text-[10px] bg-blue-600 text-white px-1.5 py-0.2 rounded font-normal">Moi</span>}
+                                </h3>
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-medium">{m.category}</span>
+                              </div>
+                            </div>
+                            <span className="text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2.5 py-1 rounded-full flex items-center gap-1">
+                              🔥 {m.streak}
+                            </span>
+                          </div>
+
+                          <div>
+                            <p className="text-sm font-semibold text-slate-200">{m.skill}</p>
+                            <p className="text-xs text-slate-400 mt-0.5">Cible: {m.target}</p>
+                          </div>
+
+                          {/* Progress bar */}
+                          <div>
+                            <div className="flex justify-between text-xs mb-1.5">
+                              <span className="text-slate-400">Progression</span>
+                              <span className="font-bold text-blue-400">{m.progress}%</span>
+                            </div>
+                            <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                              <div className="bg-gradient-to-r from-blue-500 to-indigo-500 h-full transition-all duration-500" style={{ width: `${m.progress}%` }}></div>
+                            </div>
+                          </div>
+
+                          {/* Badges preview */}
+                          <div className="flex flex-wrap gap-1">
+                            {m.badges.map((b, idx) => (
+                              <span key={idx} className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-md border border-slate-700">
+                                {b}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="mt-6 pt-4 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400">
+                          <span>🎯 Assiduité: <b className="text-white">{m.assiduityScore}%</b></span>
+                          <span className="text-blue-400 font-medium group-hover:translate-x-1 transition">
+                            Voir fiches →
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+              </div>
+            )}
+
+            {/* TAB 2: MATRICE D'ASSIDUITÉ */}
+            {activeTab === "assiduity" && (
+              <div className="space-y-8">
+                <div>
+                  <h2 className="text-xl font-bold text-white">🎯 Matrice d'Assiduité & Ponctualité</h2>
+                  <p className="text-sm text-slate-400 mt-1">Calculé sur la remise à temps des bilans bisemestriels (70%) et la présence aux réunions de synchro (30%).</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {members.map(m => (
+                    <div key={m.id} className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
+                      <div className="flex items-center gap-3">
+                        <img src={m.avatar} className="w-10 h-10 rounded-full object-cover bg-slate-800" />
+                        <div>
+                          <h3 className="font-bold text-white">{m.name}</h3>
+                          <p className="text-xs text-slate-400">{m.skill}</p>
+                        </div>
+                      </div>
+
+                      <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
+                        <div>
+                          <p className="text-xs text-slate-400">Score Global</p>
+                          <p className="text-2xl font-black text-emerald-400">{m.assiduityScore}%</p>
+                        </div>
+                        <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          {m.assiduityScore >= 90 ? '🌟 Exemplaire' : '👍 Régulier'}
+                        </span>
+                      </div>
+
+                      <div className="space-y-2 text-xs text-slate-300">
+                        <div className="flex justify-between py-1 border-b border-slate-800">
+                          <span>Bilans remis à temps:</span>
+                          <span className="font-bold">{m.reportsSubmitted} / {m.reportsExpected}</span>
+                        </div>
+                        <div className="flex justify-between py-1">
+                          <span>Présence aux réunions:</span>
+                          <span className="font-bold">{m.meetingsAttended} / {m.reportsExpected}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* TAB 3: COFFRE-FORT DES LIVRABLES (VAULT) */}
+            {activeTab === "vault" && (
+              <div className="space-y-8">
+                <div>
+                  <h2 className="text-xl font-bold text-white">📦 Coffre-Fort des Livrables & Démos</h2>
+                  <p className="text-sm text-slate-400 mt-1">Retrouvez toutes les preuves de travail, projets, vidéos et audios partagés par le groupe.</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {members.filter(m => m.lastReport && m.lastReport.deliverableUrl).map(m => (
+                    <div key={m.id} className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <img src={m.avatar} className="w-10 h-10 rounded-full object-cover" />
+                          <div>
+                            <h3 className="font-bold text-white text-sm">{m.name}</h3>
+                            <p className="text-xs text-slate-400">{m.skill}</p>
+                          </div>
+                        </div>
+                        <span className="text-xs bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2.5 py-1 rounded-full">
+                          {m.lastReport.sprint}
+                        </span>
+                      </div>
+
+                      <p className="text-xs text-slate-300 bg-slate-950 p-3 rounded-xl border border-slate-800/80">
+                        "{m.lastReport.summary}"
+                      </p>
+
+                      <div className="flex items-center justify-between pt-2">
+                        <span className="text-xs text-slate-500">{m.lastReport.date}</span>
+                        <a 
+                          href={m.lastReport.deliverableUrl} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-2 text-xs bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2 rounded-xl transition">
+                          <i className="fa-solid fa-arrow-up-right-from-square"></i> Consulter le Livrable
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* TAB 4: ASSISTANT IA MENTOR */}
+            {activeTab === "ai-assistant" && (
+              <div className="space-y-8 max-w-4xl mx-auto">
+                <div className="text-center space-y-2">
+                  <div className="inline-block bg-purple-600/20 border border-purple-500/30 p-3 rounded-2xl text-purple-400 text-2xl">
+                    🤖
+                  </div>
+                  <h2 className="text-xl font-bold text-white">IA Mentor & Guide de Sprint</h2>
+                  <p className="text-sm text-slate-400">Générez votre programme de 14 jours ou la synthèse automatique pour la réunion bisemestrielle.</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* AI Roadmap Generator */}
+                  <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
+                    <h3 className="font-bold text-white text-sm flex items-center gap-2">
+                      <i className="fa-solid fa-map text-purple-400"></i> Plan d'Étude de 14 Jours Sur-Mesure
+                    </h3>
+                    <p className="text-xs text-slate-400">Génère un découpage optimal pour ta compétence : <b className="text-white">{currentUser.skill}</b></p>
+                    <button 
+                      onClick={handleGenerateAIRoadmap}
+                      disabled={aiGenerating}
+                      className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 rounded-xl text-xs transition">
+                      {aiGenerating ? "Génération en cours..." : "✨ Générer mon Plan de Sprint"}
+                    </button>
+
+                    {aiRoadmap && (
+                      <div className="space-y-3 pt-4 border-t border-slate-800 text-xs">
+                        {aiRoadmap.map((w, i) => (
+                          <div key={i} className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1">
+                            <p className="font-bold text-purple-400">{w.week} - {w.goal}</p>
+                            <ul className="list-disc list-inside text-slate-300 space-y-0.5">
+                              {w.tasks.map((t, idx) => <li key={idx}>{t}</li>)}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* AI Meeting Summary */}
+                  <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
+                    <h3 className="font-bold text-white text-sm flex items-center gap-2">
+                      <i className="fa-solid fa-clipboard-list text-indigo-400"></i> Ordre du Jour de Réunion
+                    </h3>
+                    <p className="text-xs text-slate-400">Synthétise les bilans des membres pour guider vos 30 min de réunion.</p>
+                    <button 
+                      onClick={handleGenerateAISummary}
+                      disabled={aiGenerating}
+                      className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl text-xs transition">
+                      {aiGenerating ? "Analyse des bilans..." : "⚡ Synthétiser la Réunion"}
+                    </button>
+
+                    {aiSummary && (
+                      <div className="space-y-3 pt-4 border-t border-slate-800 text-xs text-slate-300">
+                        <p className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 font-medium text-emerald-400">{aiSummary.globalProgress}</p>
+                        <div>
+                          <p className="font-bold text-white mb-1">Ordre du Jour Suggéré :</p>
+                          <ul className="list-disc list-inside space-y-1">
+                            {aiSummary.recommendedAgenda.map((item, idx) => <li key={idx}>{item}</li>)}
+                          </ul>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
-            `;
-            container.appendChild(item);
-          });
-        }
-      });
+            )}
 
-      // Update Scores
-      const pct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-      const deenPct = deenTotal > 0 ? Math.round((deenDone / deenTotal) * 100) : 0;
+            {/* TAB 5: MON ESPACE & FORMULAIRE DE BILAN */}
+            {activeTab === "my-space" && (
+              <div className="max-w-3xl mx-auto space-y-8">
+                <div>
+                  <h2 className="text-xl font-bold text-white">📝 Soumettre mon Bilan Bisemestriel</h2>
+                  <p className="text-sm text-slate-400 mt-1">Coche tes objectifs validés, décris ton avancée et colle le lien de ta preuve de travail.</p>
+                </div>
 
-      document.getElementById('completion-text').innerText = pct + '%';
-      document.getElementById('score-today').innerText = `${completedTasks}/${totalTasks}`;
-      document.getElementById('deen-score').innerText = deenPct + '%';
+                {/* Sub-objectives */}
+                <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
+                  <h3 className="font-bold text-white text-sm">Mes Sous-Objectifs du Sprint :</h3>
+                  <div className="space-y-2">
+                    {members.find(m => m.id === currentUser.id)?.milestones.map((ms) => (
+                      <label key={ms.id} className="flex items-center gap-3 p-3 bg-slate-950 border border-slate-800/80 rounded-xl cursor-pointer hover:border-slate-700 transition">
+                        <input 
+                          type="checkbox" 
+                          checked={ms.done} 
+                          onChange={() => handleToggleMilestone(currentUser.id, ms.id)}
+                          className="w-4 h-4 rounded text-blue-600 bg-slate-900 border-slate-700" 
+                        />
+                        <span className={`text-sm ${ms.done ? 'line-through text-slate-500' : 'text-slate-200'}`}>
+                          {ms.title}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
 
-      // Calculate simple streak
-      let streak = 0;
-      let checkDate = new Date();
-      while (true) {
-        let k = getDateKey(checkDate);
-        let d = appData[k] || {};
-        let done = Object.values(d).filter(Boolean).length;
-        if (done > 0) {
-          streak++;
-          checkDate.setDate(checkDate.getDate() - 1);
-        } else {
-          break;
-        }
-      }
-      document.getElementById('streak-count').innerText = streak;
+                {/* SOS Button */}
+                <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
+                  <h3 className="font-bold text-white text-sm flex items-center justify-between">
+                    <span>🆘 Demande d'Entraide (S.O.S Blocage)</span>
+                    {currentUser.sosActive && <span className="text-xs text-rose-400 font-bold">Actif !</span>}
+                  </h3>
+                  <p className="text-xs text-slate-400">Si tu es bloqué sur une notion, alerte le groupe pour trouver une solution ensemble.</p>
+                  
+                  <form onSubmit={handleToggleSOS} className="space-y-3">
+                    <input 
+                      type="text"
+                      value={sosInput}
+                      onChange={(e) => setSosInput(e.target.value)}
+                      placeholder="Décris brièvement ton problème..."
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200"
+                    />
+                    <button 
+                      type="submit"
+                      className={`w-full font-bold py-2.5 rounded-xl text-xs transition ${currentUser.sosActive ? 'bg-slate-800 text-slate-300' : 'bg-rose-600 hover:bg-rose-500 text-white'}`}>
+                      {currentUser.sosActive ? "Désactiver mon signal S.O.S" : "🚨 Lancer un S.O.S Blocage"}
+                    </button>
+                  </form>
+                </div>
+
+                {/* Form Report */}
+                <form onSubmit={handleSubmitReport} className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-5">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      1. Résumé des travaux des 14 derniers jours
+                    </label>
+                    <textarea 
+                      required
+                      rows={3}
+                      value={newReport.summary}
+                      onChange={(e) => setNewReport({...newReport, summary: e.target.value})}
+                      placeholder="Qu'as-tu appris ou produit durant ce sprint ?"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      2. Difficultés rencontrées
+                    </label>
+                    <textarea 
+                      rows={2}
+                      value={newReport.blockers}
+                      onChange={(e) => setNewReport({...newReport, blockers: e.target.value})}
+                      placeholder="Sur quoi as-tu buté ?"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      3. Lien vers la Preuve de travail (GitHub, YouTube, Audio, Figma...)
+                    </label>
+                    <input 
+                      type="url"
+                      value={newReport.deliverableUrl}
+                      onChange={(e) => setNewReport({...newReport, deliverableUrl: e.target.value})}
+                      placeholder="https://..."
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+
+                  <button 
+                    type="submit"
+                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-500/20 transition">
+                    🚀 Publier mon Bilan Bisemestriel
+                  </button>
+                </form>
+              </div>
+            )}
+
+          </main>
+
+          {/* MODALE D'UN MEMBRE */}
+          {selectedMember && (
+            <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 space-y-6 max-h-[90vh] overflow-y-auto">
+                
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-3">
+                    <img src={selectedMember.avatar} className="w-14 h-14 rounded-full object-cover border-2 border-blue-500 bg-slate-800" />
+                    <div>
+                      <h3 className="text-xl font-bold text-white">{selectedMember.name}</h3>
+                      <p className="text-xs text-blue-400 font-medium">{selectedMember.skill}</p>
+                      <p className="text-[11px] text-slate-400">Objectif: {selectedMember.target}</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setSelectedMember(null)}
+                    className="text-slate-400 hover:text-white text-lg">✕</button>
+                </div>
+
+                <div className="space-y-2">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase">Sous-Objectifs du Sprint</h4>
+                  <div className="space-y-1.5">
+                    {selectedMember.milestones.map(ms => (
+                      <div key={ms.id} className="flex items-center gap-2 text-xs bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+                        <span className={ms.done ? "text-emerald-400" : "text-slate-500"}>{ms.done ? "✓" : "○"}</span>
+                        <span className={ms.done ? "line-through text-slate-500" : "text-slate-300"}>{ms.title}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {selectedMember.lastReport && (
+                  <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="font-bold text-slate-300">Dernier Bilan ({selectedMember.lastReport.sprint})</span>
+                      <span className="text-slate-500">{selectedMember.lastReport.date}</span>
+                    </div>
+                    <p className="text-xs text-slate-300">{selectedMember.lastReport.summary}</p>
+
+                    {selectedMember.lastReport.deliverableUrl && (
+                      <a 
+                        href={selectedMember.lastReport.deliverableUrl} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 text-xs text-blue-400 bg-blue-500/10 border border-blue-500/20 px-3 py-1.5 rounded-lg hover:bg-blue-500/20 transition">
+                        🔗 Voir le Livrable ({selectedMember.lastReport.deliverableType})
+                      </a>
+                    )}
+                  </div>
+                )}
+
+                <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs text-slate-400">
+                    <span>Soutiens reçus:</span>
+                    <span className="font-bold text-amber-400 text-sm">👏 {selectedMember.kudos}</span>
+                  </div>
+                  <button 
+                    onClick={() => handleAddKudos(selectedMember.id)}
+                    className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 font-bold px-4 py-2 rounded-xl text-xs transition">
+                    👏 Envoyer un Bravo
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
     }
 
-    function renderHistory() {
-      const historyContainer = document.getElementById('history-container');
-      historyContainer.innerHTML = '';
-
-      const keys = Object.keys(appData).sort().reverse();
-      if (keys.length === 0) {
-        historyContainer.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem;">Aucun historique pour le moment.</p>';
-        return;
-      }
-
-      keys.forEach(k => {
-        const dayObj = appData[k];
-        const doneCount = Object.values(dayObj).filter(Boolean).length;
-        const total = TASKS_TEMPLATE.length;
-        const pct = Math.round((doneCount / total) * 100);
-
-        const div = document.createElement('div');
-        div.className = 'history-item';
-        div.innerHTML = `
-          <span>${k}</span>
-          <span style="color: var(--gold-primary); font-weight: bold;">${pct}% (${doneCount}/${total})</span>
-        `;
-        historyContainer.appendChild(div);
-      });
-    }
-
-    function exportData() {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData));
-      const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `PMG_LEVELING_BACKUP_${getDateKey(new Date())}.json`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-    }
-
-    function importData(event) {
-      const fileReader = new FileReader();
-      fileReader.onload = function(e) {
-        try {
-          const imported = JSON.parse(e.target.result);
-          appData = imported;
-          localStorage.setItem('PMG_LEVELING_DATA', JSON.stringify(appData));
-          renderChecklist();
-          alert("Données importées avec succès !");
-        } catch (err) {
-          alert("Erreur lors de l'importation du fichier.");
-        }
-      };
-      fileReader.readAsText(event.target.files[0]);
-    }
-
-    // INITIAL RENDER
-    renderChecklist();
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
   </script>
 </body>
 </html>
