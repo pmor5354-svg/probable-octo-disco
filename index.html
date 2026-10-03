@@ -4,8 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SkillSprint Pro - Dashboard</title>
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
     .custom-scrollbar::-webkit-scrollbar { width: 6px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
@@ -14,7 +19,7 @@
 </head>
 <body class="h-full flex flex-col font-sans antialiased bg-slate-950 text-slate-100 overflow-x-hidden">
 
-  <!-- Top Navigation Bar -->
+  <!-- Navigation -->
   <header class="bg-slate-900/80 backdrop-blur border-b border-slate-800 sticky top-0 z-40">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16 gap-2">
@@ -26,14 +31,14 @@
             <h1 class="font-extrabold text-lg tracking-tight text-white flex items-center gap-2">
               SkillSprint <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">PRO</span>
             </h1>
-            <p class="text-xs text-slate-400 truncate">Janvier 2027 · <span id="daysLeft"></span></p>
+            <p class="text-xs text-slate-400 truncate">Janvier 2027 · <span id="daysLeft">Calcul en cours...</span></p>
           </div>
         </div>
 
         <div class="flex items-center gap-2 sm:gap-3 shrink-0">
           <span class="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
-            <span id="statusDot" class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
-            <span id="statusText">Connexion…</span>
+            <span id="statusDot" class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            <span id="statusText">Connecté</span>
           </span>
 
           <button id="sosBtn" type="button" onclick="triggerSOS()" aria-label="SOS Support" class="hidden bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 px-3 py-1.5 rounded-lg text-sm font-medium transition items-center gap-2">
@@ -53,11 +58,11 @@
     </div>
   </header>
 
-  <!-- Bannière d'erreur de connexion (visible aussi sur mobile) -->
+  <!-- Bannière d'erreur de connexion -->
   <div id="errorBanner" class="hidden bg-rose-950/60 border-b border-rose-500/30 text-rose-200 text-xs px-4 py-2.5">
     <div class="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center gap-2 justify-between">
       <div>
-        <p id="errorHint" class="font-semibold"></p>
+        <p id="errorHint" class="font-semibold">Une erreur s'est produite</p>
         <p id="errorDetail" class="text-rose-300/80 break-words mt-0.5"></p>
       </div>
       <button type="button" onclick="refresh(true)" class="self-start sm:self-auto px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 font-semibold">
@@ -68,7 +73,7 @@
 
   <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
-    <!-- Registration / Join Banner -->
+    <!-- Bannière d'inscription -->
     <section id="joinBanner" class="bg-gradient-to-r from-slate-900 via-emerald-950/40 to-slate-900 border border-emerald-500/30 rounded-2xl p-6 relative overflow-hidden shadow-2xl">
       <div class="max-w-2xl relative z-10 space-y-4">
         <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
@@ -85,7 +90,7 @@
           </div>
           <div class="flex-1">
             <label for="regGoal" class="sr-only">Votre objectif</label>
-            <input type="text" id="regGoal" required maxlength="80" placeholder="Ex: Développeur Fullstack / Data" class="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 text-sm">
+            <input type="text" id="regGoal" required maxlength="80" placeholder="Ex: Développeur Fullstack / Finance / Closing" class="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 text-sm">
           </div>
           <button type="submit" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-6 py-2.5 rounded-xl transition shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 text-sm">
             <i class="fa-solid fa-user-plus"></i> Rejoindre le Groupe
@@ -97,9 +102,9 @@
       </div>
     </section>
 
-    <!-- User Active Dashboard -->
+    <!-- Tableau de bord personnel -->
     <section id="userDashboard" class="hidden grid grid-cols-1 md:grid-cols-3 gap-4">
-      <!-- Card 1: Today -->
+      <!-- Card 1: Aujourd'hui -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between space-y-4">
         <div class="flex items-center justify-between">
           <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Émargement du Jour</span>
@@ -114,7 +119,7 @@
         </button>
       </div>
 
-      <!-- Card 2: Roadmap -->
+      <!-- Card 2: Feuille de route -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between space-y-4">
         <div class="flex items-center justify-between">
           <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Cap Janvier 2027</span>
@@ -129,13 +134,12 @@
         <div class="flex items-center gap-2">
           <label for="overallSlider" class="sr-only">Ma progression</label>
           <input type="range" id="overallSlider" min="0" max="100" value="0"
-                 onpointerdown="sliderBusy = true" onpointercancel="sliderBusy = false"
                  oninput="previewProgress(this.value)" onchange="saveProgress(this.value)"
                  class="w-full accent-emerald-500 cursor-pointer">
         </div>
       </div>
 
-      <!-- Card 3: Buddy -->
+      <!-- Card 3: Binôme -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between space-y-4">
         <div class="flex items-center justify-between">
           <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Sprint Bi-Hebdomadaire</span>
@@ -148,8 +152,8 @@
               <i class="fa-solid fa-user-group"></i>
             </div>
             <div class="overflow-hidden">
-              <p id="buddyName" class="text-sm font-semibold text-slate-200 truncate">Recherche d'un binôme...</p>
-              <p id="buddyGoal" class="text-[11px] text-slate-500 truncate"></p>
+              <p id="buddyName" class="text-sm font-semibold text-slate-200 truncate">Aucun binôme assigné</p>
+              <p id="buddyGoal" class="text-[11px] text-slate-500 truncate">Rejoignez un autre membre</p>
             </div>
           </div>
         </div>
@@ -159,7 +163,7 @@
       </div>
     </section>
 
-    <!-- Members -->
+    <!-- Liste des membres -->
     <section class="space-y-4">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
         <div>
@@ -185,8 +189,9 @@
       </div>
     </section>
 
+    <!-- Sections Coach & Fil d'Actualité -->
     <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4">
-      <!-- Coach (scripted) -->
+      <!-- Coach IA -->
       <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col h-96">
         <div class="flex items-center justify-between pb-3 border-b border-slate-800">
           <div class="flex items-center gap-2">
@@ -195,7 +200,7 @@
             </div>
             <h3 class="font-bold text-white text-sm">Coach SkillSprint</h3>
           </div>
-          <span class="text-[11px] text-slate-500">Réponses guidées (mode démo)</span>
+          <span class="text-[11px] text-slate-500">Réponses guidées</span>
         </div>
 
         <div id="chatMessages" class="flex-1 overflow-y-auto custom-scrollbar my-3 space-y-3 pr-2 text-xs">
@@ -213,12 +218,256 @@
         </form>
       </div>
 
-      <!-- Feed -->
+      <!-- Feed / Signalements -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col h-96">
         <div class="pb-3 border-b border-slate-800 flex items-center justify-between">
           <h3 class="font-bold text-white text-sm flex items-center gap-2">
             <i class="fa-solid fa-bullhorn text-amber-400"></i> Signalements & Kudos
           </h3>
-          <span id="feedMode" class="text-[11px] text-slate-500">Local</span>
+          <span id="feedMode" class="text-[11px] text-slate-500">En direct</span>
         </div>
-        <div id="feedList"
+        <div id="feedList" class="flex-1 overflow-y-auto custom-scrollbar my-3 space-y-2 pr-1 text-xs">
+          <div class="p-2.5 rounded-xl bg-slate-950 border border-slate-800/80 text-slate-400">
+            Bienvenue dans le fil d'actualité du groupe !
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // Configuration & États
+    let currentUser = JSON.parse(localStorage.getItem("skillsprint_current_user") || "null");
+    let members = JSON.parse(localStorage.getItem("skillsprint_members") || "[]");
+    let feedItems = JSON.parse(localStorage.getItem("skillsprint_feed") || "[]");
+
+    document.addEventListener("DOMContentLoaded", () => {
+      calculateDaysLeft();
+      renderApp();
+    });
+
+    // Compte à rebours Janvier 2027
+    function calculateDaysLeft() {
+      const targetDate = new Date("2027-01-01T00:00:00");
+      const now = new Date();
+      const diffTime = targetDate - now;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      document.getElementById("daysLeft").innerText = diffDays > 0 ? `${diffDays} jours restants` : "Cap atteint !";
+    }
+
+    // Inscription utilisateur
+    function registerUser(e) {
+      e.preventDefault();
+      const name = document.getElementById("regName").value.trim();
+      const goal = document.getElementById("regGoal").value.trim();
+
+      if (!name || !goal) return;
+
+      const newUser = {
+        id: "usr_" + Date.now(),
+        name: name,
+        goal: goal,
+        workedToday: true,
+        streak: 1,
+        progress: 0,
+        kudos: 0
+      };
+
+      currentUser = newUser;
+      members.push(newUser);
+
+      saveState();
+      addFeedItem(`🎉 <strong>${name}</strong> a rejoint le sprint ! Objectif: ${goal}`);
+      renderApp();
+    }
+
+    function toggleTodayWork() {
+      if (!currentUser) return;
+      currentUser.workedToday = !currentUser.workedToday;
+      if (currentUser.workedToday) {
+        currentUser.streak += 1;
+        addFeedItem(`🔥 <strong>${currentUser.name}</strong> a validé sa journée de travail !`);
+      } else {
+        currentUser.streak = Math.max(0, currentUser.streak - 1);
+      }
+      updateUserInMembers();
+      saveState();
+      renderApp();
+    }
+
+    function previewProgress(val) {
+      document.getElementById("myOverallPercent").innerText = val + "%";
+      document.getElementById("myOverallBar").style.width = val + "%";
+    }
+
+    function saveProgress(val) {
+      if (!currentUser) return;
+      currentUser.progress = parseInt(val);
+      updateUserInMembers();
+      saveState();
+      renderApp();
+    }
+
+    function triggerSOS() {
+      if (!currentUser) return;
+      const msg = prompt("Expliquez votre blocage au groupe :");
+      if (msg) {
+        addFeedItem(`🚨 <strong>SOS de ${currentUser.name}</strong>: "${msg}"`);
+        renderFeed();
+      }
+    }
+
+    function sendKudosToGroup() {
+      if (!currentUser) return;
+      addFeedItem(`👏 <strong>${currentUser.name}</strong> a envoyé des Kudos à tout le groupe !`);
+      renderFeed();
+    }
+
+    function logout() {
+      currentUser = null;
+      localStorage.removeItem("skillsprint_current_user");
+      renderApp();
+    }
+
+    function updateUserInMembers() {
+      const idx = members.findIndex(m => m.id === currentUser.id);
+      if (idx !== -1) members[idx] = currentUser;
+    }
+
+    function saveState() {
+      localStorage.setItem("skillsprint_current_user", JSON.stringify(currentUser));
+      localStorage.setItem("skillsprint_members", JSON.stringify(members));
+      localStorage.setItem("skillsprint_feed", JSON.stringify(feedItems));
+    }
+
+    function addFeedItem(htmlContent) {
+      feedItems.unshift({ id: Date.now(), content: htmlContent });
+      if (feedItems.length > 20) feedItems.pop();
+      localStorage.setItem("skillsprint_feed", JSON.stringify(feedItems));
+    }
+
+    // Affichage global
+    function renderApp() {
+      const joinBanner = document.getElementById("joinBanner");
+      const userDashboard = document.getElementById("userDashboard");
+      const userProfileHeader = document.getElementById("userProfileHeader");
+      const sosBtn = document.getElementById("sosBtn");
+
+      if (currentUser) {
+        joinBanner.classList.add("hidden");
+        userDashboard.classList.remove("hidden");
+        userProfileHeader.classList.remove("hidden");
+        userProfileHeader.classList.add("flex");
+        sosBtn.classList.remove("hidden");
+        sosBtn.classList.add("flex");
+
+        document.getElementById("userName").innerText = currentUser.name;
+        document.getElementById("userAvatar").innerText = currentUser.name.charAt(0);
+        document.getElementById("myGoalTitle").innerText = currentUser.goal;
+        document.getElementById("streakText").innerText = `${currentUser.streak} jour(s)`;
+        
+        previewProgress(currentUser.progress || 0);
+        document.getElementById("overallSlider").value = currentUser.progress || 0;
+
+        const badge = document.getElementById("todayBadge");
+        const btnText = document.getElementById("markBtnText");
+        if (currentUser.workedToday) {
+          badge.className = "text-xs px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+          badge.innerText = "🟢 Validé";
+          btnText.innerText = "Journée validée";
+        } else {
+          badge.className = "text-xs px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30";
+          badge.innerText = "Non validé";
+          btnText.innerText = "Marquer comme Travaillé";
+        }
+      } else {
+        joinBanner.classList.remove("hidden");
+        userDashboard.classList.add("hidden");
+        userProfileHeader.classList.add("hidden");
+        sosBtn.classList.add("hidden");
+      }
+
+      renderMembers();
+      renderFeed();
+    }
+
+    function renderMembers() {
+      const list = document.getElementById("membersList");
+      const notice = document.getElementById("emptyMembersNotice");
+      document.getElementById("memberCount").innerText = `${members.length} membre(s)`;
+
+      if (members.length === 0) {
+        list.innerHTML = "";
+        notice.classList.remove("hidden");
+        return;
+      }
+
+      notice.classList.add("hidden");
+      list.innerHTML = members.map(m => `
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-full bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold text-sm">
+                ${m.name.charAt(0)}
+              </div>
+              <div>
+                <h4 class="font-bold text-sm text-white">${m.name}</h4>
+                <p class="text-[11px] text-slate-400 truncate max-w-[150px]">${m.goal}</p>
+              </div>
+            </div>
+            ${m.workedToday ? '<span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-semibold">🟢 Actif</span>' : '<span class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full">En repos</span>'}
+          </div>
+
+          <div>
+            <div class="flex justify-between text-xs text-slate-400 mb-1">
+              <span>Progression</span>
+              <span class="font-bold text-emerald-400">${m.progress || 0}%</span>
+            </div>
+            <div class="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-800">
+              <div class="bg-emerald-500 h-full" style="width: ${m.progress || 0}%"></div>
+            </div>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function renderFeed() {
+      const list = document.getElementById("feedList");
+      if (feedItems.length === 0) return;
+      list.innerHTML = feedItems.map(item => `
+        <div class="p-2.5 rounded-xl bg-slate-950 border border-slate-800/80 text-slate-300 text-xs">
+          ${item.content}
+        </div>
+      `).join("");
+    }
+
+    // Coach IA Simulatif
+    function sendAiMessage(e) {
+      e.preventDefault();
+      const input = document.getElementById("aiInput");
+      const msg = input.value.trim();
+      if (!msg) return;
+
+      const chat = document.getElementById("chatMessages");
+      chat.innerHTML += `
+        <div class="bg-emerald-500/10 border border-emerald-500/20 text-emerald-200 p-3 rounded-xl ml-auto max-w-[85%] text-xs">
+          ${msg}
+        </div>
+      `;
+
+      input.value = "";
+      chat.scrollTop = chat.scrollHeight;
+
+      setTimeout(() => {
+        chat.innerHTML += `
+          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-slate-300 max-w-[85%] text-xs">
+            Excellente question ! Pour maintenir un rythme régulier jusqu'en Janvier 2027, concentrez-vous sur des sessions quotidiennes de 45 minutes et faites un point bi-hebdomadaire avec votre binôme.
+          </div>
+        `;
+        chat.scrollTop = chat.scrollHeight;
+      }, 800);
+    }
+  </script>
+</body>
+</html>
