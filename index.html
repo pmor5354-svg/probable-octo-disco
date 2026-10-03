@@ -57,15 +57,15 @@
             <span class="text-emerald-400 text-sm">🗓️</span>
             <div>
               <div class="text-[10px] text-slate-400 uppercase font-semibold">Sprint Actuel</div>
-              <div class="text-xs font-bold text-slate-200">Session #4 (Cycle 14J)</div>
+              <div class="text-xs font-bold text-slate-200">Session #1 (Cycle 14J)</div>
             </div>
           </div>
           <div class="border-l border-slate-800 h-6"></div>
           <div class="flex items-center gap-1.5">
             <span class="text-orange-500 text-sm">🔥</span>
             <div>
-              <div class="text-[10px] text-slate-400 uppercase font-semibold">Team Streak</div>
-              <div class="text-xs font-bold text-orange-400" id="teamStreakVal">12 Sprints</div>
+              <div class="text-[10px] text-slate-400 uppercase font-semibold">Membres Actifs</div>
+              <div class="text-xs font-bold text-orange-400" id="activeMembersCount">0 Member</div>
             </div>
           </div>
         </div>
@@ -200,18 +200,18 @@
           <div>
             <div class="flex justify-between text-xs mb-2">
               <span class="text-slate-300 font-medium">Progression Objectif 2027</span>
-              <span id="myProgressVal" class="font-extrabold text-emerald-400">45%</span>
+              <span id="myProgressVal" class="font-extrabold text-emerald-400">0%</span>
             </div>
-            <input type="range" id="progressRange" min="0" max="100" value="45" oninput="updateMyProgress(this.value)" class="w-full accent-emerald-500 h-2 bg-slate-800 rounded-lg cursor-pointer">
+            <input type="range" id="progressRange" min="0" max="100" value="0" oninput="updateMyProgress(this.value)" class="w-full accent-emerald-500 h-2 bg-slate-800 rounded-lg cursor-pointer">
           </div>
 
           <!-- Mise à jour Progression Sprint Actuel (14J) -->
           <div>
             <div class="flex justify-between text-xs mb-2">
               <span class="text-slate-300 font-medium">Progression du Sprint 14J en cours</span>
-              <span id="mySprintVal" class="font-extrabold text-cyan-400">70%</span>
+              <span id="mySprintVal" class="font-extrabold text-cyan-400">0%</span>
             </div>
-            <input type="range" id="sprintRange" min="0" max="100" value="70" oninput="updateMySprintProgress(this.value)" class="w-full accent-cyan-500 h-2 bg-slate-800 rounded-lg cursor-pointer">
+            <input type="range" id="sprintRange" min="0" max="100" value="0" oninput="updateMySprintProgress(this.value)" class="w-full accent-cyan-500 h-2 bg-slate-800 rounded-lg cursor-pointer">
           </div>
 
           <!-- Activer/Désactiver S.O.S -->
@@ -232,7 +232,7 @@
             </div>
             <div>
               <div class="text-[11px] text-slate-400 uppercase font-semibold">Mon Binôme (Study Buddy)</div>
-              <div id="myBuddyName" class="text-xs font-bold text-slate-200">Awa N. (Finance)</div>
+              <div id="myBuddyName" class="text-xs font-bold text-slate-200">En attente d'attribution</div>
             </div>
           </div>
         </div>
@@ -316,89 +316,30 @@
 
   <!-- JavaScript Logique & Synchronisation Supabase -->
   <script>
-    // Configuration Supabase avec votre clé publique (publishable)
+    // Configuration Supabase
     const SUPABASE_URL = 'https://z-cff2q7mierlomxcy8z6a-cqllf6sj.supabase.co';
     const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_z-cFf2q7MIErLOmXcY8z6A_cQLLf6Sj';
 
     let supabaseClient = null;
-    if (typeof supabase !== 'undefined' && SUPABASE_URL.indexOf('z-cff2q7') === -1) {
+    if (typeof supabase !== 'undefined') {
       supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
     }
 
-    // Données locales initiales (fallback si la BDD est hors-ligne)
-    let membersData = [
-      {
-        id: "m1",
-        name: "Pablo",
-        avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80",
-        skill: "Stratégie TikTok & Contenu",
-        target: "Générer 1M de vues & 100k abonnés d'ici Janvier 2027",
-        workedToday: true,
-        progress: 45,
-        sprintProgress: 70,
-        streak: 8,
-        sos: false,
-        kudos: 18,
-        badges: ["Pionnier 🚀", "Créateur 🎬"],
-        buddy: "Awa N.",
-        lastReport: "Il y a 3 jours",
-        attendance: 100
-      },
-      {
-        id: "m2",
-        name: "Awa N.",
-        avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80",
-        skill: "Finance, Audit & Gestion",
-        target: "Maîtriser l'analyse financière & modèles de valorisation",
-        workedToday: true,
-        progress: 55,
-        sprintProgress: 85,
-        streak: 12,
-        sos: false,
-        kudos: 12,
-        badges: ["Régulier 📈", "Finance Guru 💼"],
-        buddy: "Pablo",
-        lastReport: "Hier",
-        attendance: 95
-      },
-      {
-        id: "m3",
-        name: "Moussa K.",
-        avatar: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&auto=format&fit=crop&q=80",
-        skill: "Closing & Apporteur d'Affaires",
-        target: "Signer 15 contrats partenariats/entreprises d'ici 2027",
-        workedToday: false,
-        progress: 30,
-        sprintProgress: 40,
-        streak: 5,
-        sos: true,
-        sosMsg: "Besoin de conseils pour rédiger mes scripts de prospection téléphonique !",
-        kudos: 9,
-        badges: ["Négociateur 🤝"],
-        buddy: "Pablo",
-        lastReport: "Aujourd'hui",
-        attendance: 88
-      }
-    ];
+    // Récupérer le membre connecté dans LocalStorage pour garder la session après rafraîchissement
+    let currentUserId = localStorage.getItem("skillsprint_user_id") || null;
+    let membersData = [];
 
-    let currentUserId = "m1"; // Utilisateur actif
-
-    // Initialisation globale
     document.addEventListener("DOMContentLoaded", () => {
       lucide.createIcons();
-      renderMembers();
-      renderCharts();
-      renderAttendance();
-      updateMyPanel();
       syncWithSupabase();
     });
 
-    // Synchronisation transparente avec Supabase
+    // Synchronisation Supabase & gestion du membre actif
     async function syncWithSupabase() {
       if (!supabaseClient) return;
       try {
         const { data, error } = await supabaseClient.from('members').select('*');
-        if (data && data.length > 0 && !error) {
+        if (data && !error) {
           membersData = data.map(m => ({
             ...m,
             workedToday: m.workedToday ?? m.workedtoday ?? false,
@@ -407,13 +348,22 @@
             lastReport: m.lastReport ?? m.lastreport ?? 'Aujourd\'hui',
             badges: Array.isArray(m.badges) ? m.badges : ["Membre 🚀"]
           }));
+
+          // Si l'utilisateur enregistré n'existe plus ou est nul, définir le premier membre si disponible
+          if (!currentUserId && membersData.length > 0) {
+            currentUserId = membersData[0].id;
+            localStorage.setItem("skillsprint_user_id", currentUserId);
+          }
+
+          document.getElementById("activeMembersCount").innerText = `${membersData.length} Membre(s)`;
+
           renderMembers();
           renderCharts();
           renderAttendance();
           updateMyPanel();
         }
       } catch (err) {
-        console.log("Mode local actif:", err);
+        console.error("Erreur de synchronisation Supabase:", err);
       }
     }
 
@@ -433,7 +383,7 @@
           sos: member.sos,
           sosMsg: member.sosMsg || '',
           kudos: member.kudos,
-          buddy: member.buddy,
+          buddy: member.buddy || 'Aucun',
           lastReport: member.lastReport,
           attendance: member.attendance
         });
@@ -452,6 +402,18 @@
       const grid = document.getElementById("membersGrid");
       grid.innerHTML = "";
 
+      if (membersData.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-2 text-center py-10 bg-slate-950 rounded-xl border border-slate-800">
+            <p class="text-sm text-slate-400 mb-3">Aucun membre inscrit dans le groupe pour le moment.</p>
+            <button onclick="toggleModal('registerModal')" class="bg-emerald-500 text-slate-950 font-bold px-4 py-2 rounded-lg text-xs">
+              Créer le premier profil
+            </button>
+          </div>
+        `;
+        return;
+      }
+
       membersData.forEach(m => {
         const isMe = m.id === currentUserId;
         const card = document.createElement("div");
@@ -463,7 +425,7 @@
             <div class="flex items-center gap-3 mb-3">
               <img src="${m.avatar}" class="w-12 h-12 rounded-full object-cover border border-slate-700">
               <div>
-                <h3 class="font-bold text-sm text-slate-100 flex items-center gap-1.5">
+                <h3 class="font-bold text-sm text-slate-100 flex items-center gap-1.5 cursor-pointer" onclick="switchUser('${m.id}')" title="Cliquer pour basculer sur ce profil">
                   ${m.name}
                   ${m.sos ? '<span class="text-[10px] bg-red-500 text-white font-extrabold px-1.5 py-0.2 rounded animate-bounce">S.O.S</span>' : ''}
                 </h3>
@@ -471,7 +433,6 @@
               </div>
             </div>
 
-            <!-- Statut travail du jour -->
             <div class="mb-3 flex items-center gap-2">
               <span class="text-[11px] text-slate-400">Aujourd'hui :</span>
               ${m.workedToday ? 
@@ -490,7 +451,6 @@
               </div>
             ` : ''}
 
-            <!-- Progression Globale (2027) -->
             <div class="mt-3">
               <div class="flex justify-between text-xs mb-1">
                 <span class="text-slate-400">Progression Globale (2027)</span>
@@ -501,7 +461,6 @@
               </div>
             </div>
 
-            <!-- Sprint 14 jours -->
             <div class="mt-2">
               <div class="flex justify-between text-xs mb-1">
                 <span class="text-slate-400">Sprint 14J Actuel</span>
@@ -511,21 +470,15 @@
                 <div class="bg-gradient-to-r from-cyan-500 to-indigo-400 h-full transition-all duration-500" style="width: ${m.sprintProgress}%"></div>
               </div>
             </div>
-
           </div>
 
-          <!-- Footer carte -->
           <div class="mt-4 pt-3 border-t border-slate-900 flex justify-between items-center text-xs">
-            <div class="flex items-center gap-1 text-orange-400 font-semibold" title="Sprints validés d'affilée">
-              🔥 ${m.streak} Sprints
+            <div class="flex items-center gap-1 text-orange-400 font-semibold">
+              🔥 ${m.streak || 1} Sprints
             </div>
 
-            <div class="flex gap-1">
-              ${(m.badges || []).map(b => `<span class="bg-slate-800 text-[10px] text-slate-300 px-1.5 py-0.5 rounded">${b}</span>`).join('')}
-            </div>
-
-            <button onclick="sendKudos('${m.id}')" class="bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 px-2 py-1 rounded-lg flex items-center gap-1 transition-all">
-              👏 <span class="font-bold text-emerald-400">${m.kudos}</span>
+            <button onclick="sendKudos('${m.id}')" class="bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-all">
+              👏 <span class="font-bold text-emerald-400">${m.kudos || 0}</span>
             </button>
           </div>
         `;
@@ -534,10 +487,22 @@
       });
     }
 
+    function switchUser(id) {
+      currentUserId = id;
+      localStorage.setItem("skillsprint_user_id", id);
+      renderMembers();
+      updateMyPanel();
+    }
+
     // Graphiques comparatifs
     function renderCharts() {
       const container = document.getElementById("chartsContainer");
       container.innerHTML = "";
+
+      if (membersData.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-500">Aucune donnée à afficher.</p>`;
+        return;
+      }
 
       membersData.forEach(m => {
         const row = document.createElement("div");
@@ -577,8 +542,8 @@
               '<span class="text-[10px] text-slate-400 bg-slate-800 px-2 py-0.5 rounded-full">Inactif</span>'
             }
           </td>
-          <td class="p-3 text-xs text-slate-400">${m.lastReport}</td>
-          <td class="p-3 font-bold text-indigo-400">${m.attendance}%</td>
+          <td class="p-3 text-xs text-slate-400">${m.lastReport || 'Aujourd\'hui'}</td>
+          <td class="p-3 font-bold text-indigo-400">${m.attendance || 100}%</td>
         `;
         tbody.appendChild(tr);
       });
@@ -589,11 +554,11 @@
       const me = membersData.find(m => m.id === currentUserId);
       if (!me) return;
 
-      document.getElementById("myProgressVal").innerText = me.progress + "%";
-      document.getElementById("progressRange").value = me.progress;
+      document.getElementById("myProgressVal").innerText = (me.progress || 0) + "%";
+      document.getElementById("progressRange").value = me.progress || 0;
 
-      document.getElementById("mySprintVal").innerText = me.sprintProgress + "%";
-      document.getElementById("sprintRange").value = me.sprintProgress;
+      document.getElementById("mySprintVal").innerText = (me.sprintProgress || 0) + "%";
+      document.getElementById("sprintRange").value = me.sprintProgress || 0;
 
       const badge = document.getElementById("myWorkedTodayBadge");
       const toggleBtn = document.getElementById("toggleWorkedBtn");
@@ -661,7 +626,7 @@
         me.sos = !me.sos;
         if (me.sos) {
           const msg = prompt("Expliquez votre blocage aux membres du groupe :");
-          me.sosMsg = msg || "Besoin d'un coup de main sur ma stratégie !";
+          me.sosMsg = msg || "Besoin d'un coup de main !";
         }
         updateMyPanel();
         renderMembers();
@@ -672,45 +637,53 @@
     function sendKudos(id) {
       const target = membersData.find(m => m.id === id);
       if (target) {
-        target.kudos++;
+        target.kudos = (target.kudos || 0) + 1;
         renderMembers();
         saveMemberToSupabase(target);
       }
     }
 
-    function handleRegister(e) {
+    // Inscription avec enregistrement dans localStorage & Supabase
+    async function handleRegister(e) {
       e.preventDefault();
-      const name = document.getElementById("regName").value;
-      const skill = document.getElementById("regSkill").value;
-      const target = document.getElementById("regTarget").value;
+      const name = document.getElementById("regName").value.trim();
+      const skill = document.getElementById("regSkill").value.trim();
+      const target = document.getElementById("regTarget").value.trim();
+
+      const newId = "user_" + Date.now();
 
       const newMember = {
-        id: "m" + (membersData.length + 1),
+        id: newId,
         name: name,
         avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}`,
         skill: skill,
         target: target,
         workedToday: true,
-        progress: 10,
-        sprintProgress: 20,
+        progress: 0,
+        sprintProgress: 0,
         streak: 1,
         sos: false,
-        kudos: 1,
-        badges: ["Membre 🚀"],
-        buddy: "Awa N.",
+        kudos: 0,
+        badges: ["Pionnier 🚀"],
+        buddy: "Aucun",
         lastReport: "Aujourd'hui",
         attendance: 100
       };
 
+      // Sauvegarde du compte actif
+      currentUserId = newId;
+      localStorage.setItem("skillsprint_user_id", newId);
+
       membersData.push(newMember);
-      currentUserId = newMember.id;
 
       toggleModal('registerModal');
       renderMembers();
       renderCharts();
       renderAttendance();
       updateMyPanel();
-      saveMemberToSupabase(newMember);
+
+      await saveMemberToSupabase(newMember);
+      syncWithSupabase();
     }
 
     function switchAITab(tab) {
