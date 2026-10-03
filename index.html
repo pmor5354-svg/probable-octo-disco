@@ -1,863 +1,384 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SkillSprint Pro - Dashboard d'Apprentissage & Accountability</title>
-  
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- FontAwesome Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-  <!-- React & ReactDOM CDN -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  
-  <!-- Babel Standalone pour exécuter le JSX -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+import React, { useState, useEffect } from 'react';
+import { createClient } from '@supabase/supabase-js';
 
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
-    body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
+// 1. Initialisation de Supabase avec vos clés
+const SUPABASE_URL = "https://vnkpgebvoigojihujklo.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_AaB4r6OTWzPunASGTcFYvQ_n6LQH-vb";
+
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+export default function SkillSprintDashboard() {
+  const [session, setSession] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [members, setMembers] = useState([]);
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Formulaire pour poster un nouveau rapport (Vault)
+  const [newReport, setNewReport] = useState({
+    sprint_name: 'Sprint 1',
+    summary: '',
+    blockers: '',
+    deliverable_url: '',
+    deliverable_type: 'Projet'
+  });
+
+  // -------------------------------------------------------------
+  // 2. Gestion de l'authentification et écoute des changements
+  // -------------------------------------------------------------
+  useEffect(() => {
+    // Obtenir la session actuelle
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session) handleUserSync(session.user);
+    });
+
+    // Écouter les changements d'état (login/logout)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) {
+        handleUserSync(session.user);
+      } else {
+        setCurrentUser(null);
+      }
+    });
+
+    fetchData();
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // -------------------------------------------------------------
+  // 3. Synchroniser l'utilisateur GitHub dans la table 'members'
+  // -------------------------------------------------------------
+  const handleUserSync = async (user) => {
+    try {
+      const githubUsername = user.user_metadata.full_name || user.user_metadata.user_name || "Membre";
+      const avatarUrl = user.user_metadata.avatar_url;
+
+      // Vérifier si le membre existe déjà
+      let { data: existingMember, error } = await supabase
+        .from('members')
+        .select('*')
+        .eq('github_id', user.id)
+        .maybeSingle();
+
+      if (!existingMember) {
+        // Insérer un nouveau membre
+        const { data: newMember, error: insertError } = await supabase
+          .from('members')
+          .insert([
+            {
+              github_id: user.id,
+              name: githubUsername,
+              avatar_url: avatarUrl,
+              skill: "Développement Web / Tech",
+              category: "Tech",
+              target: "Finaliser SkillSprint",
+              progress: 10,
+              streak: 1
+            }
+          ])
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+        setCurrentUser(newMember);
+      } else {
+        setCurrentUser(existingMember);
+      }
+    } catch (err) {
+      console.error("Erreur lors de la synchronisation du profil :", err.message);
     }
-  </style>
-</head>
-<body class="bg-slate-950 text-slate-100 min-h-screen">
+  };
 
-  <div id="root"></div>
+  // -------------------------------------------------------------
+  // 4. Charger la liste des membres et des livrables depuis Supabase
+  // -------------------------------------------------------------
+  const fetchData = async () => {
+    setLoading(true);
+    
+    // Récupérer tous les membres
+    const { data: membersData } = await supabase
+      .from('members')
+      .select('*')
+      .order('progress', { ascending: false });
 
-  <script type="text/babel">
-    const { useState, useEffect } = React;
+    // Récupérer tous les bilans
+    const { data: reportsData } = await supabase
+      .from('reports')
+      .select('*, members(name, avatar_url)')
+      .order('created_at', { ascending: false });
 
-    // --- DONNÉES SIMULÉES DE LA TRIBU ---
-    const INITIAL_MEMBERS = [
-      {
-        id: "m1",
-        name: "Moussa",
-        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
-        skill: "Montage DaVinci Resolve",
-        category: "Créatif & Média",
-        target: "Créer des vidéos 4K dynamiques",
-        progress: 80,
-        streak: 4,
-        kudos: 24,
-        assiduityScore: 100,
-        reportsSubmitted: 3,
-        reportsExpected: 3,
-        meetingsAttended: 3,
-        reportStatus: "Soumis",
-        sosActive: false,
-        badges: ["Pionnier 🚀", "Régularité d'Acier 🛡️", "Mentor 🤝"],
-        lastReport: {
-          sprint: "Sprint #3",
-          date: "30 Septembre 2026",
-          summary: "Maîtrise de la page Fusion, étalonnage de couleur (Color Grading) et export 4K.",
-          blockers: "Optimisation de la mémoire GPU pendant les rendus complexes.",
-          deliverableUrl: "https://youtube.com",
-          deliverableType: "Vidéo YouTube"
-        },
-        milestones: [
-          { id: "1", title: "Cut dynamique & raccourcis clavier", done: true },
-          { id: "2", title: "Étalonnage avec Node-tree", done: true },
-          { id: "3", title: "Création d'intro animée sur Fusion", done: true }
-        ]
-      },
-      {
-        id: "m2",
-        name: "Awa",
-        avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80",
-        skill: "Anglais Business & Conversation",
-        category: "Langues",
-        target: "Niveau B2 & Pitchs professionnels",
-        progress: 45,
-        streak: 2,
-        kudos: 12,
-        assiduityScore: 80,
-        reportsSubmitted: 2,
-        reportsExpected: 3,
-        meetingsAttended: 2,
-        reportStatus: "En attente",
-        sosActive: true,
-        sosMessage: "Besoin d'un partenaire pour pratiquer un pitch de 5 min en vocal ce soir !",
-        badges: ["Pionnier 🚀"],
-        lastReport: {
-          sprint: "Sprint #2",
-          date: "15 Septembre 2026",
-          summary: "Lecture de 2 articles HBR par jour et apprentissage du vocabulaire de la finance.",
-          blockers: "Blocage à l'oral sur les temps du passé.",
-          deliverableUrl: "https://clyp.it",
-          deliverableType: "Enregistrement Audio"
-        },
-        milestones: [
-          { id: "1", title: "30 min de conversation audio quotidienne", done: true },
-          { id: "2", title: "Apprendre 50 expressions idiomatiques", done: false },
-          { id: "3", title: "Enregistrer un pitch professionnel de 5 min", done: false }
-        ]
+    if (membersData) setMembers(membersData);
+    if (reportsData) setReports(reportsData);
+    setLoading(false);
+  };
+
+  // -------------------------------------------------------------
+  // 5. Actions d'authentification
+  // -------------------------------------------------------------
+  const handleLoginWithGitHub = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'github',
+      options: {
+        redirectTo: window.location.origin
       }
-    ];
+    });
+    if (error) console.error("Erreur OAuth GitHub :", error.message);
+  };
 
-    const MEETINGS_HISTORY = [
-      { id: "s1", name: "Sprint #1 Sync", date: "22 Août 2026" },
-      { id: "s2", name: "Sprint #2 Sync", date: "05 Septembre 2026" },
-      { id: "s3", name: "Sprint #3 Sync", date: "19 Septembre 2026" }
-    ];
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
 
-    function App() {
-      // ÉTAT INSCRIPTION
-      const [currentUser, setCurrentUser] = useState(null);
-      const [usernameInput, setUsernameInput] = useState("");
-      const [skillInput, setSkillInput] = useState("");
-      const [targetInput, setTargetInput] = useState("");
+  // -------------------------------------------------------------
+  // 6. Soumettre un bilan / livrable (Vault)
+  // -------------------------------------------------------------
+  const handleSubmitReport = async (e) => {
+    e.preventDefault();
+    if (!currentUser) return alert("Veuillez vous connecter !");
 
-      // ÉTAT APPLICATION
-      const [members, setMembers] = useState(INITIAL_MEMBERS);
-      const [activeTab, setActiveTab] = useState("dashboard"); // dashboard, assiduity, my-space, vault, ai-assistant
-      const [selectedMember, setSelectedMember] = useState(null);
-      const [newReport, setNewReport] = useState({ summary: "", blockers: "", deliverableUrl: "" });
-      const [sosInput, setSosInput] = useState("");
-      
-      // État Assistant IA
-      const [aiGenerating, setAiGenerating] = useState(false);
-      const [aiRoadmap, setAiRoadmap] = useState(null);
-      const [aiSummary, setAiSummary] = useState(null);
+    const { error } = await supabase.from('reports').insert([
+      {
+        member_id: currentUser.id,
+        sprint_name: newReport.sprint_name,
+        summary: newReport.summary,
+        blockers: newReport.blockers,
+        deliverable_url: newReport.deliverable_url,
+        deliverable_type: newReport.deliverable_type
+      }
+    ]);
 
-      const daysLeftInSprint = 4;
+    if (!error) {
+      setNewReport({
+        sprint_name: 'Sprint 1',
+        summary: '',
+        blockers: '',
+        deliverable_url: '',
+        deliverable_type: 'Projet'
+      });
+      fetchData(); // Rafraîchir les données
+    } else {
+      alert("Erreur lors de l'envoi du rapport : " + error.message);
+    }
+  };
 
-      // Inscription utilisateur
-      const handleRegister = (e) => {
-        e.preventDefault();
-        if (!usernameInput.trim() || !skillInput.trim()) return;
+  // -------------------------------------------------------------
+  // Rendu de l'Interface Utilisateur (UI Tailwind CSS)
+  // -------------------------------------------------------------
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-6 font-sans">
+      {/* Header / Barre supérieure */}
+      <header className="max-w-7xl mx-auto flex justify-between items-center pb-8 border-b border-slate-800">
+        <div>
+          <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-500">
+            SkillSprint Pro 🚀
+          </h1>
+          <p className="text-slate-400 text-sm mt-1">Dashboard d'apprentissage en groupe & suivi de sprints</p>
+        </div>
 
-        const newUser = {
-          id: "user_" + Date.now(),
-          name: usernameInput.trim(),
-          avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(usernameInput)}`,
-          skill: skillInput.trim(),
-          category: "Auto-Apprentissage",
-          target: targetInput.trim() || "Maîtriser la compétence",
-          progress: 10,
-          streak: 1,
-          kudos: 0,
-          assiduityScore: 100,
-          reportsSubmitted: 1,
-          reportsExpected: 1,
-          meetingsAttended: 1,
-          reportStatus: "En attente",
-          sosActive: false,
-          badges: ["Nouveau Venu 🌟"],
-          lastReport: null,
-          milestones: [
-            { id: "1", title: "Définir mon plan d'étude de 14 jours", done: false },
-            { id: "2", title: "Pratique quotidienne autonome (30 min/j)", done: false },
-            { id: "3", title: "Créer un projet/livrable pour la démo", done: false }
-          ]
-        };
-
-        setCurrentUser(newUser);
-        setMembers(prev => [newUser, ...prev]);
-      };
-
-      // basculer un jalon
-      const handleToggleMilestone = (memberId, milestoneId) => {
-        setMembers(prev => prev.map(m => {
-          if (m.id !== memberId) return m;
-          const updatedMs = m.milestones.map(ms => ms.id === milestoneId ? { ...ms, done: !ms.done } : ms);
-          const doneCount = updatedMs.filter(x => x.done).length;
-          const newProgress = Math.round((doneCount / updatedMs.length) * 100);
-          return { ...m, milestones: updatedMs, progress: newProgress };
-        }));
-      };
-
-      // Ajouter Bravo / Kudos
-      const handleAddKudos = (memberId) => {
-        setMembers(prev => prev.map(m => m.id === memberId ? { ...m, kudos: m.kudos + 1 } : m));
-        if (selectedMember && selectedMember.id === memberId) {
-          setSelectedMember(prev => ({ ...prev, kudos: prev.kudos + 1 }));
-        }
-      };
-
-      // Soumettre Bilan
-      const handleSubmitReport = (e) => {
-        e.preventDefault();
-        setMembers(prev => prev.map(m => {
-          if (m.id === currentUser.id) {
-            return {
-              ...m,
-              reportStatus: "Soumis",
-              streak: m.streak + 1,
-              badges: Array.from(new Set([...m.badges, "Bilan Validé 📝"])),
-              lastReport: {
-                sprint: "Sprint Actuel",
-                date: "Aujourd'hui",
-                summary: newReport.summary,
-                blockers: newReport.blockers,
-                deliverableUrl: newReport.deliverableUrl,
-                deliverableType: "Projet Pratique"
-              }
-            };
-          }
-          return m;
-        }));
-        alert("🎉 Bilan bisemestriel soumis avec succès ! Vos amis peuvent désormais le consulter.");
-        setNewReport({ summary: "", blockers: "", deliverableUrl: "" });
-      };
-
-      // Activer / Désactiver S.O.S
-      const handleToggleSOS = (e) => {
-        e.preventDefault();
-        setMembers(prev => prev.map(m => {
-          if (m.id === currentUser.id) {
-            return { ...m, sosActive: !m.sosActive, sosMessage: sosInput };
-          }
-          return m;
-        }));
-        setSosInput("");
-      };
-
-      // Simulation Générateur de Plan d'Étude IA
-      const handleGenerateAIRoadmap = () => {
-        setAiGenerating(true);
-        setTimeout(() => {
-          setAiRoadmap([
-            { week: "Semaine 1 (J1 - J7)", goal: "Fondations & Pratique guidée", tasks: ["Suivre les 3 premiers modules théoriques", "Reproduire un exemple pas à pas", "Noter les 3 principales difficultés"] },
-            { week: "Semaine 2 (J8 - J14)", goal: "Création autonome & Livrable", tasks: ["Concevoir un mini-projet de zéro", "Préparer la démo de 3 minutes pour le groupe", "Soumettre le bilan sur SkillSprint"] }
-          ]);
-          setAiGenerating(false);
-        }, 1200);
-      };
-
-      // Simulation Synthèse de Réunion IA
-      const handleGenerateAISummary = () => {
-        setAiGenerating(true);
-        setTimeout(() => {
-          setAiSummary({
-            globalProgress: "Excellente dynamique d'équipe avec 75% d'objectifs validés.",
-            highlights: [
-              "Moussa a totalement automatisé l'étalonnage vidéo sur DaVinci.",
-              "Awa a augmenté son assiduité et recherche un partenaire de conversation."
-            ],
-            recommendedAgenda: [
-              "5 min : Tour de table & célébrations des Kudos",
-              "15 min : Démo des livrables (Moussa & Pablo)",
-              "10 min : Résolution collective des blocages (S.O.S)"
-            ]
-          });
-          setAiGenerating(false);
-        }, 1200);
-      };
-
-      // 1. ÉCRAN D'INSCRIPTION / ONBOARDING
-      if (!currentUser) {
-        return (
-          <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-            <div className="max-w-md w-full bg-slate-900 border border-slate-800 p-8 rounded-3xl shadow-2xl space-y-6">
-              
-              <div className="text-center space-y-2">
-                <div className="inline-flex bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-3.5 rounded-2xl text-white font-black text-2xl shadow-lg shadow-blue-500/20 mb-2">
-                  ⚡ SK
+        <div>
+          {!session ? (
+            <button
+              onClick={handleLoginWithGitHub}
+              className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-medium px-4 py-2 rounded-lg transition-all border border-slate-700"
+            >
+              <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+              </svg>
+              Se connecter avec GitHub
+            </button>
+          ) : (
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <img
+                  src={currentUser?.avatar_url || session.user.user_metadata.avatar_url}
+                  alt="Avatar"
+                  className="w-10 h-10 rounded-full border border-emerald-500"
+                />
+                <div className="text-left">
+                  <p className="font-semibold text-sm">{currentUser?.name || "Membre"}</p>
+                  <p className="text-xs text-emerald-400">● En ligne</p>
                 </div>
-                <h1 className="text-2xl font-black text-white">SkillSprint Pro</h1>
-                <p className="text-xs text-slate-400">Dashboard collaboratif d'apprentissage par sprint de 14 jours.</p>
               </div>
-
-              <form onSubmit={handleRegister} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    <i className="fa-solid fa-user text-blue-400 mr-1.5"></i> Ton Pseudo / Prénom
-                  </label>
-                  <input 
-                    type="text"
-                    required
-                    value={usernameInput}
-                    onChange={(e) => setUsernameInput(e.target.value)}
-                    placeholder="Ex: Pablo, Alex, Cheikh..."
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    <i className="fa-solid fa-graduation-cap text-indigo-400 mr-1.5"></i> La compétence que tu vas apprendre
-                  </label>
-                  <input 
-                    type="text"
-                    required
-                    value={skillInput}
-                    onChange={(e) => setSkillInput(e.target.value)}
-                    placeholder="Ex: Next.js & Supabase, Montage Vidéo, Espagnol..."
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    <i className="fa-solid fa-bullseye text-purple-400 mr-1.5"></i> Ton objectif final (en 3 mois)
-                  </label>
-                  <input 
-                    type="text"
-                    value={targetInput}
-                    onChange={(e) => setTargetInput(e.target.value)}
-                    placeholder="Ex: Lancer mon SaaS, Monter 5 vidéos, Parler couramment..."
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
-                  />
-                </div>
-
-                <button 
-                  type="submit"
-                  className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:opacity-90 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-500/20 transition mt-2 flex items-center justify-center gap-2">
-                  <span>🚀 Rejoindre le Groupe</span>
-                </button>
-              </form>
-
-              <div className="pt-4 border-t border-slate-800/80 text-[11px] text-center text-slate-500 space-y-1">
-                <p>⚡ Un compte-rendu toutes les 2 semaines</p>
-                <p>🤝 Évaluation réciproque & entraide</p>
-              </div>
+              <button
+                onClick={handleLogout}
+                className="text-xs bg-slate-900 hover:bg-slate-800 text-slate-400 px-3 py-2 rounded-md border border-slate-800"
+              >
+                Déconnexion
+              </button>
             </div>
-          </div>
-        );
-      }
+          )}
+        </div>
+      </header>
 
-      // 2. APPLICATION PRINCIPALE (DASHBOARD)
-      return (
-        <div className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-16">
+      {/* Contenu Principal */}
+      <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+        
+        {/* Colonne 1 & 2 : Membres et Classement */}
+        <div className="lg:col-span-2 space-y-8">
           
-          {/* NAVIGATION HEADER */}
-          <header className="border-b border-slate-800 bg-slate-900/60 backdrop-blur-md sticky top-0 z-40">
-            <div className="max-w-7xl mx-auto px-4 py-3.5 flex flex-col md:flex-row items-center justify-between gap-4">
-              
-              <div className="flex items-center gap-3">
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-2.5 rounded-xl text-white font-black text-xl shadow-lg shadow-blue-500/20">
-                  ⚡ SK
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
-                    SkillSprint Pro
-                  </h1>
-                  <p className="text-xs text-slate-400">
-                    Membre: <b className="text-blue-400">{currentUser.name}</b> ({currentUser.skill})
-                  </p>
-                </div>
-              </div>
-
-              {/* Countdown Banner & Team Streak */}
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 px-3.5 py-1.5 rounded-xl">
-                  <span className="text-amber-400 text-sm font-bold"><i className="fa-solid fa-fire"></i> Team Streak: 3</span>
-                  <span className="text-[10px] text-amber-300/70 hidden sm:inline">(6 sem. parfaites)</span>
-                </div>
-
-                <div className="flex items-center gap-2 bg-slate-800/80 border border-slate-700/60 px-3.5 py-1.5 rounded-xl">
-                  <span className="relative flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                  </span>
-                  <span className="text-xs font-bold text-emerald-400">{daysLeftInSprint} jours restants</span>
-                </div>
-              </div>
-
-              {/* Navigation Tabs */}
-              <div className="flex bg-slate-900 border border-slate-800 p-1 rounded-xl text-xs overflow-x-auto max-w-full">
-                <button 
-                  onClick={() => setActiveTab("dashboard")}
-                  className={`px-3.5 py-1.5 rounded-lg font-semibold transition whitespace-nowrap ${activeTab === 'dashboard' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>
-                  🏠 Groupe
-                </button>
-                <button 
-                  onClick={() => setActiveTab("assiduity")}
-                  className={`px-3.5 py-1.5 rounded-lg font-semibold transition whitespace-nowrap ${activeTab === 'assiduity' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>
-                  🎯 Assiduité
-                </button>
-                <button 
-                  onClick={() => setActiveTab("vault")}
-                  className={`px-3.5 py-1.5 rounded-lg font-semibold transition whitespace-nowrap ${activeTab === 'vault' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>
-                  📦 Livrables
-                </button>
-                <button 
-                  onClick={() => setActiveTab("ai-assistant")}
-                  className={`px-3.5 py-1.5 rounded-lg font-semibold transition whitespace-nowrap ${activeTab === 'ai-assistant' ? 'bg-purple-600 text-white shadow' : 'text-purple-400 hover:text-white'}`}>
-                  🤖 IA Mentor
-                </button>
-                <button 
-                  onClick={() => setActiveTab("my-space")}
-                  className={`px-3.5 py-1.5 rounded-lg font-semibold transition whitespace-nowrap ${activeTab === 'my-space' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>
-                  📝 Mon Bilan
-                </button>
-              </div>
-
-            </div>
-          </header>
-
-          {/* MAIN CONTENT AREA */}
-          <main className="max-w-7xl mx-auto px-4 mt-8">
-            
-            {/* TAB 1: DASHBOARD DE GROUPE */}
-            {activeTab === "dashboard" && (
-              <div className="space-y-8">
-                
-                {/* Global KPI Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
-                    <p className="text-xs font-medium text-slate-400">Progression Équipe</p>
-                    <p className="text-3xl font-extrabold text-blue-400 mt-1">
-                      {Math.round(members.reduce((acc, m) => acc + m.progress, 0) / members.length)}%
-                    </p>
-                    <p className="text-xs text-emerald-400 mt-1"><i className="fa-solid fa-arrow-trend-up"></i> +14% ce sprint</p>
-                  </div>
-
-                  <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
-                    <p className="text-xs font-medium text-slate-400">Taux d'Assiduité</p>
-                    <p className="text-3xl font-extrabold text-emerald-400 mt-1">93.3%</p>
-                    <p className="text-xs text-slate-400 mt-1">Bilans & Présence réunions</p>
-                  </div>
-
-                  <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
-                    <p className="text-xs font-medium text-slate-400">Appels S.O.S Actifs</p>
-                    <p className="text-3xl font-extrabold text-rose-400 mt-1">
-                      {members.filter(m => m.sosActive).length} Demande(s)
-                    </p>
-                    <p className="text-xs text-slate-400 mt-1">Entraide prioritaire</p>
-                  </div>
-
-                  <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl">
-                    <p className="text-xs font-medium text-slate-400">Kudos / Bravo Échangés</p>
-                    <p className="text-3xl font-extrabold text-amber-400 mt-1">
-                      👏 {members.reduce((acc, m) => acc + m.kudos, 0)}
-                    </p>
-                    <p className="text-xs text-slate-400 mt-1">Encouragements reçus</p>
-                  </div>
-                </div>
-
-                {/* S.O.S Alert Banner (If Any) */}
-                {members.some(m => m.sosActive) && (
-                  <div className="bg-rose-500/10 border border-rose-500/30 p-5 rounded-2xl space-y-3">
-                    <h3 className="font-bold text-rose-400 text-sm flex items-center gap-2">
-                      <i className="fa-solid fa-triangle-exclamation animate-bounce"></i>
-                      Demande d'Aide Urgent (S.O.S Blocage) dans l'équipe :
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {members.filter(m => m.sosActive).map(m => (
-                        <div key={m.id} className="bg-slate-900 p-3.5 rounded-xl border border-rose-500/20 flex items-start gap-3">
-                          <img src={m.avatar} className="w-10 h-10 rounded-full object-cover border border-rose-500" />
-                          <div>
-                            <p className="text-xs font-bold text-white">{m.name} ({m.skill})</p>
-                            <p className="text-xs text-rose-300 mt-1">"{m.sosMessage || 'Bloqué(e) sur un point technique'}"</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Team Members Cards */}
-                <div>
-                  <h2 className="text-lg font-bold text-white mb-4 flex items-center justify-between">
-                    <span>👥 Membres de la Tribu ({members.length})</span>
-                    <span className="text-xs text-slate-400 font-normal">Cliquez sur un membre pour voir son profil complet</span>
-                  </h2>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {members.map((m) => (
-                      <div 
-                        key={m.id}
-                        onClick={() => setSelectedMember(m)}
-                        className={`bg-slate-900 border ${m.id === currentUser.id ? 'border-blue-500/50 bg-blue-950/10' : 'border-slate-800'} hover:border-slate-700 transition rounded-2xl p-6 cursor-pointer flex flex-col justify-between group relative overflow-hidden`}>
-                        
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <img src={m.avatar} className="w-12 h-12 rounded-full object-cover border-2 border-slate-700 group-hover:border-blue-500 transition bg-slate-800" />
-                              <div>
-                                <h3 className="font-bold text-white group-hover:text-blue-400 transition flex items-center gap-1.5">
-                                  {m.name}
-                                  {m.id === currentUser.id && <span className="text-[10px] bg-blue-600 text-white px-1.5 py-0.2 rounded font-normal">Moi</span>}
-                                </h3>
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-medium">{m.category}</span>
-                              </div>
-                            </div>
-                            <span className="text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2.5 py-1 rounded-full flex items-center gap-1">
-                              🔥 {m.streak}
-                            </span>
-                          </div>
-
-                          <div>
-                            <p className="text-sm font-semibold text-slate-200">{m.skill}</p>
-                            <p className="text-xs text-slate-400 mt-0.5">Cible: {m.target}</p>
-                          </div>
-
-                          {/* Progress bar */}
-                          <div>
-                            <div className="flex justify-between text-xs mb-1.5">
-                              <span className="text-slate-400">Progression</span>
-                              <span className="font-bold text-blue-400">{m.progress}%</span>
-                            </div>
-                            <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
-                              <div className="bg-gradient-to-r from-blue-500 to-indigo-500 h-full transition-all duration-500" style={{ width: `${m.progress}%` }}></div>
-                            </div>
-                          </div>
-
-                          {/* Badges preview */}
-                          <div className="flex flex-wrap gap-1">
-                            {m.badges.map((b, idx) => (
-                              <span key={idx} className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-md border border-slate-700">
-                                {b}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="mt-6 pt-4 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400">
-                          <span>🎯 Assiduité: <b className="text-white">{m.assiduityScore}%</b></span>
-                          <span className="text-blue-400 font-medium group-hover:translate-x-1 transition">
-                            Voir fiches →
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-              </div>
-            )}
-
-            {/* TAB 2: MATRICE D'ASSIDUITÉ */}
-            {activeTab === "assiduity" && (
-              <div className="space-y-8">
-                <div>
-                  <h2 className="text-xl font-bold text-white">🎯 Matrice d'Assiduité & Ponctualité</h2>
-                  <p className="text-sm text-slate-400 mt-1">Calculé sur la remise à temps des bilans bisemestriels (70%) et la présence aux réunions de synchro (30%).</p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {members.map(m => (
-                    <div key={m.id} className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
-                      <div className="flex items-center gap-3">
-                        <img src={m.avatar} className="w-10 h-10 rounded-full object-cover bg-slate-800" />
-                        <div>
-                          <h3 className="font-bold text-white">{m.name}</h3>
-                          <p className="text-xs text-slate-400">{m.skill}</p>
-                        </div>
-                      </div>
-
-                      <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
-                        <div>
-                          <p className="text-xs text-slate-400">Score Global</p>
-                          <p className="text-2xl font-black text-emerald-400">{m.assiduityScore}%</p>
-                        </div>
-                        <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                          {m.assiduityScore >= 90 ? '🌟 Exemplaire' : '👍 Régulier'}
+          {/* Section Membres */}
+          <section className="bg-slate-900 p-6 rounded-xl border border-slate-800">
+            <h2 className="text-xl font-bold mb-4 text-emerald-400">Tribu & Progression</h2>
+            {loading ? (
+              <p className="text-slate-500">Chargement des membres...</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {members.map((member) => (
+                  <div key={member.id} className="bg-slate-950 p-4 rounded-lg border border-slate-800/80 flex flex-col justify-between">
+                    <div className="flex items-center gap-3">
+                      <img src={member.avatar_url} alt="" className="w-12 h-12 rounded-full" />
+                      <div>
+                        <h3 className="font-semibold">{member.name}</h3>
+                        <span className="text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded">
+                          {member.skill}
                         </span>
                       </div>
+                    </div>
 
-                      <div className="space-y-2 text-xs text-slate-300">
-                        <div className="flex justify-between py-1 border-b border-slate-800">
-                          <span>Bilans remis à temps:</span>
-                          <span className="font-bold">{m.reportsSubmitted} / {m.reportsExpected}</span>
-                        </div>
-                        <div className="flex justify-between py-1">
-                          <span>Présence aux réunions:</span>
-                          <span className="font-bold">{m.meetingsAttended} / {m.reportsExpected}</span>
-                        </div>
+                    <div className="mt-4">
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-slate-400">Progression</span>
+                        <span className="font-bold text-emerald-400">{member.progress}%</span>
+                      </div>
+                      <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                        <div
+                          className="bg-emerald-500 h-full transition-all duration-300"
+                          style={{ width: `${member.progress}%` }}
+                        ></div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
-            {/* TAB 3: COFFRE-FORT DES LIVRABLES (VAULT) */}
-            {activeTab === "vault" && (
-              <div className="space-y-8">
-                <div>
-                  <h2 className="text-xl font-bold text-white">📦 Coffre-Fort des Livrables & Démos</h2>
-                  <p className="text-sm text-slate-400 mt-1">Retrouvez toutes les preuves de travail, projets, vidéos et audios partagés par le groupe.</p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {members.filter(m => m.lastReport && m.lastReport.deliverableUrl).map(m => (
-                    <div key={m.id} className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <img src={m.avatar} className="w-10 h-10 rounded-full object-cover" />
-                          <div>
-                            <h3 className="font-bold text-white text-sm">{m.name}</h3>
-                            <p className="text-xs text-slate-400">{m.skill}</p>
-                          </div>
-                        </div>
-                        <span className="text-xs bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2.5 py-1 rounded-full">
-                          {m.lastReport.sprint}
-                        </span>
-                      </div>
-
-                      <p className="text-xs text-slate-300 bg-slate-950 p-3 rounded-xl border border-slate-800/80">
-                        "{m.lastReport.summary}"
-                      </p>
-
-                      <div className="flex items-center justify-between pt-2">
-                        <span className="text-xs text-slate-500">{m.lastReport.date}</span>
-                        <a 
-                          href={m.lastReport.deliverableUrl} 
-                          target="_blank" 
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-2 text-xs bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2 rounded-xl transition">
-                          <i className="fa-solid fa-arrow-up-right-from-square"></i> Consulter le Livrable
-                        </a>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* TAB 4: ASSISTANT IA MENTOR */}
-            {activeTab === "ai-assistant" && (
-              <div className="space-y-8 max-w-4xl mx-auto">
-                <div className="text-center space-y-2">
-                  <div className="inline-block bg-purple-600/20 border border-purple-500/30 p-3 rounded-2xl text-purple-400 text-2xl">
-                    🤖
-                  </div>
-                  <h2 className="text-xl font-bold text-white">IA Mentor & Guide de Sprint</h2>
-                  <p className="text-sm text-slate-400">Générez votre programme de 14 jours ou la synthèse automatique pour la réunion bisemestrielle.</p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* AI Roadmap Generator */}
-                  <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
-                    <h3 className="font-bold text-white text-sm flex items-center gap-2">
-                      <i className="fa-solid fa-map text-purple-400"></i> Plan d'Étude de 14 Jours Sur-Mesure
-                    </h3>
-                    <p className="text-xs text-slate-400">Génère un découpage optimal pour ta compétence : <b className="text-white">{currentUser.skill}</b></p>
-                    <button 
-                      onClick={handleGenerateAIRoadmap}
-                      disabled={aiGenerating}
-                      className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 rounded-xl text-xs transition">
-                      {aiGenerating ? "Génération en cours..." : "✨ Générer mon Plan de Sprint"}
-                    </button>
-
-                    {aiRoadmap && (
-                      <div className="space-y-3 pt-4 border-t border-slate-800 text-xs">
-                        {aiRoadmap.map((w, i) => (
-                          <div key={i} className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1">
-                            <p className="font-bold text-purple-400">{w.week} - {w.goal}</p>
-                            <ul className="list-disc list-inside text-slate-300 space-y-0.5">
-                              {w.tasks.map((t, idx) => <li key={idx}>{t}</li>)}
-                            </ul>
-                          </div>
+                    <div className="flex justify-between items-center mt-3 pt-2 border-t border-slate-900 text-xs text-slate-400">
+                      <span>🔥 Série : {member.streak} jours</span>
+                      <div className="flex gap-1">
+                        {member.badges?.map((badge, idx) => (
+                          <span key={idx} className="bg-slate-800 px-1.5 py-0.5 rounded">{badge}</span>
                         ))}
                       </div>
-                    )}
+                    </div>
                   </div>
-
-                  {/* AI Meeting Summary */}
-                  <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
-                    <h3 className="font-bold text-white text-sm flex items-center gap-2">
-                      <i className="fa-solid fa-clipboard-list text-indigo-400"></i> Ordre du Jour de Réunion
-                    </h3>
-                    <p className="text-xs text-slate-400">Synthétise les bilans des membres pour guider vos 30 min de réunion.</p>
-                    <button 
-                      onClick={handleGenerateAISummary}
-                      disabled={aiGenerating}
-                      className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl text-xs transition">
-                      {aiGenerating ? "Analyse des bilans..." : "⚡ Synthétiser la Réunion"}
-                    </button>
-
-                    {aiSummary && (
-                      <div className="space-y-3 pt-4 border-t border-slate-800 text-xs text-slate-300">
-                        <p className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 font-medium text-emerald-400">{aiSummary.globalProgress}</p>
-                        <div>
-                          <p className="font-bold text-white mb-1">Ordre du Jour Suggéré :</p>
-                          <ul className="list-disc list-inside space-y-1">
-                            {aiSummary.recommendedAgenda.map((item, idx) => <li key={idx}>{item}</li>)}
-                          </ul>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                ))}
               </div>
             )}
+          </section>
 
-            {/* TAB 5: MON ESPACE & FORMULAIRE DE BILAN */}
-            {activeTab === "my-space" && (
-              <div className="max-w-3xl mx-auto space-y-8">
-                <div>
-                  <h2 className="text-xl font-bold text-white">📝 Soumettre mon Bilan Bisemestriel</h2>
-                  <p className="text-sm text-slate-400 mt-1">Coche tes objectifs validés, décris ton avancée et colle le lien de ta preuve de travail.</p>
-                </div>
-
-                {/* Sub-objectives */}
-                <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
-                  <h3 className="font-bold text-white text-sm">Mes Sous-Objectifs du Sprint :</h3>
-                  <div className="space-y-2">
-                    {members.find(m => m.id === currentUser.id)?.milestones.map((ms) => (
-                      <label key={ms.id} className="flex items-center gap-3 p-3 bg-slate-950 border border-slate-800/80 rounded-xl cursor-pointer hover:border-slate-700 transition">
-                        <input 
-                          type="checkbox" 
-                          checked={ms.done} 
-                          onChange={() => handleToggleMilestone(currentUser.id, ms.id)}
-                          className="w-4 h-4 rounded text-blue-600 bg-slate-900 border-slate-700" 
-                        />
-                        <span className={`text-sm ${ms.done ? 'line-through text-slate-500' : 'text-slate-200'}`}>
-                          {ms.title}
+          {/* Section Historique des Livrables */}
+          <section className="bg-slate-900 p-6 rounded-xl border border-slate-800">
+            <h2 className="text-xl font-bold mb-4 text-cyan-400">Le Coffre (Vault) - Bilans & Livrables</h2>
+            <div className="space-y-4">
+              {reports.length === 0 ? (
+                <p className="text-slate-500 text-sm">Aucun bilan soumis pour le moment.</p>
+              ) : (
+                reports.map((report) => (
+                  <div key={report.id} className="bg-slate-950 p-4 rounded-lg border border-slate-800">
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-center gap-2">
+                        <img src={report.members?.avatar_url} alt="" className="w-6 h-6 rounded-full" />
+                        <span className="font-medium text-sm">{report.members?.name}</span>
+                        <span className="text-xs bg-cyan-950 text-cyan-400 border border-cyan-800 px-2 py-0.5 rounded">
+                          {report.sprint_name}
                         </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* SOS Button */}
-                <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
-                  <h3 className="font-bold text-white text-sm flex items-center justify-between">
-                    <span>🆘 Demande d'Entraide (S.O.S Blocage)</span>
-                    {currentUser.sosActive && <span className="text-xs text-rose-400 font-bold">Actif !</span>}
-                  </h3>
-                  <p className="text-xs text-slate-400">Si tu es bloqué sur une notion, alerte le groupe pour trouver une solution ensemble.</p>
-                  
-                  <form onSubmit={handleToggleSOS} className="space-y-3">
-                    <input 
-                      type="text"
-                      value={sosInput}
-                      onChange={(e) => setSosInput(e.target.value)}
-                      placeholder="Décris brièvement ton problème..."
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200"
-                    />
-                    <button 
-                      type="submit"
-                      className={`w-full font-bold py-2.5 rounded-xl text-xs transition ${currentUser.sosActive ? 'bg-slate-800 text-slate-300' : 'bg-rose-600 hover:bg-rose-500 text-white'}`}>
-                      {currentUser.sosActive ? "Désactiver mon signal S.O.S" : "🚨 Lancer un S.O.S Blocage"}
-                    </button>
-                  </form>
-                </div>
-
-                {/* Form Report */}
-                <form onSubmit={handleSubmitReport} className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-5">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
-                      1. Résumé des travaux des 14 derniers jours
-                    </label>
-                    <textarea 
-                      required
-                      rows={3}
-                      value={newReport.summary}
-                      onChange={(e) => setNewReport({...newReport, summary: e.target.value})}
-                      placeholder="Qu'as-tu appris ou produit durant ce sprint ?"
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
-                      2. Difficultés rencontrées
-                    </label>
-                    <textarea 
-                      rows={2}
-                      value={newReport.blockers}
-                      onChange={(e) => setNewReport({...newReport, blockers: e.target.value})}
-                      placeholder="Sur quoi as-tu buté ?"
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
-                      3. Lien vers la Preuve de travail (GitHub, YouTube, Audio, Figma...)
-                    </label>
-                    <input 
-                      type="url"
-                      value={newReport.deliverableUrl}
-                      onChange={(e) => setNewReport({...newReport, deliverableUrl: e.target.value})}
-                      placeholder="https://..."
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
-                    />
-                  </div>
-
-                  <button 
-                    type="submit"
-                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-500/20 transition">
-                    🚀 Publier mon Bilan Bisemestriel
-                  </button>
-                </form>
-              </div>
-            )}
-
-          </main>
-
-          {/* MODALE D'UN MEMBRE */}
-          {selectedMember && (
-            <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 space-y-6 max-h-[90vh] overflow-y-auto">
-                
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-3">
-                    <img src={selectedMember.avatar} className="w-14 h-14 rounded-full object-cover border-2 border-blue-500 bg-slate-800" />
-                    <div>
-                      <h3 className="text-xl font-bold text-white">{selectedMember.name}</h3>
-                      <p className="text-xs text-blue-400 font-medium">{selectedMember.skill}</p>
-                      <p className="text-[11px] text-slate-400">Objectif: {selectedMember.target}</p>
-                    </div>
-                  </div>
-                  <button 
-                    onClick={() => setSelectedMember(null)}
-                    className="text-slate-400 hover:text-white text-lg">✕</button>
-                </div>
-
-                <div className="space-y-2">
-                  <h4 className="text-xs font-bold text-slate-400 uppercase">Sous-Objectifs du Sprint</h4>
-                  <div className="space-y-1.5">
-                    {selectedMember.milestones.map(ms => (
-                      <div key={ms.id} className="flex items-center gap-2 text-xs bg-slate-950 p-2.5 rounded-lg border border-slate-800">
-                        <span className={ms.done ? "text-emerald-400" : "text-slate-500"}>{ms.done ? "✓" : "○"}</span>
-                        <span className={ms.done ? "line-through text-slate-500" : "text-slate-300"}>{ms.title}</span>
                       </div>
-                    ))}
-                  </div>
-                </div>
-
-                {selectedMember.lastReport && (
-                  <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-bold text-slate-300">Dernier Bilan ({selectedMember.lastReport.sprint})</span>
-                      <span className="text-slate-500">{selectedMember.lastReport.date}</span>
+                      <span className="text-xs text-slate-500">
+                        {new Date(report.created_at).toLocaleDateString()}
+                      </span>
                     </div>
-                    <p className="text-xs text-slate-300">{selectedMember.lastReport.summary}</p>
 
-                    {selectedMember.lastReport.deliverableUrl && (
-                      <a 
-                        href={selectedMember.lastReport.deliverableUrl} 
-                        target="_blank" 
+                    <p className="text-sm mt-3 text-slate-300">{report.summary}</p>
+
+                    {report.blockers && (
+                      <div className="mt-2 text-xs bg-red-950/40 border border-red-900/50 p-2 rounded text-red-300">
+                        ⚠️ **Blocages :** {report.blockers}
+                      </div>
+                    )}
+
+                    {report.deliverable_url && (
+                      <a
+                        href={report.deliverable_url}
+                        target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-2 text-xs text-blue-400 bg-blue-500/10 border border-blue-500/20 px-3 py-1.5 rounded-lg hover:bg-blue-500/20 transition">
-                        🔗 Voir le Livrable ({selectedMember.lastReport.deliverableType})
+                        className="inline-block mt-3 text-xs text-emerald-400 hover:underline"
+                      >
+                        🔗 Voir le projet / livrable →
                       </a>
                     )}
                   </div>
-                )}
-
-                <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs text-slate-400">
-                    <span>Soutiens reçus:</span>
-                    <span className="font-bold text-amber-400 text-sm">👏 {selectedMember.kudos}</span>
-                  </div>
-                  <button 
-                    onClick={() => handleAddKudos(selectedMember.id)}
-                    className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 font-bold px-4 py-2 rounded-xl text-xs transition">
-                    👏 Envoyer un Bravo
-                  </button>
-                </div>
-
-              </div>
+                ))
+              )}
             </div>
-          )}
+          </section>
 
         </div>
-      );
-    }
 
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<App />);
-  </script>
-</body>
-</html>
+        {/* Colonne 3 : Soumettre un livrable */}
+        <div className="space-y-8">
+          <section className="bg-slate-900 p-6 rounded-xl border border-slate-800">
+            <h2 className="text-xl font-bold mb-4 text-white">Soumettre un bilan</h2>
+
+            {!session ? (
+              <p className="text-sm text-slate-400">Connectez-vous avec GitHub pour poster un livrable.</p>
+            ) : (
+              <form onSubmit={handleSubmitReport} className="space-y-4">
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Sprint</label>
+                  <input
+                    type="text"
+                    value={newReport.sprint_name}
+                    onChange={(e) => setNewReport({ ...newReport, sprint_name: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Résumé du travail effectué</label>
+                  <textarea
+                    rows="3"
+                    value={newReport.summary}
+                    onChange={(e) => setNewReport({ ...newReport, summary: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
+                    placeholder="Qu'avez-vous accompli aujourd'hui ?"
+                    required
+                  ></textarea>
+                </div>
+
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Difficultés / Blocages (Optionnel)</label>
+                  <input
+                    type="text"
+                    value={newReport.blockers}
+                    onChange={(e) => setNewReport({ ...newReport, blockers: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
+                    placeholder="Ex: Erreur CORS, configuration Supabase..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Lien du livrable (GitHub, Vercel, Figma)</label>
+                  <input
+                    type="url"
+                    value={newReport.deliverable_url}
+                    onChange={(e) => setNewReport({ ...newReport, deliverable_url: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
+                    placeholder="https://github.com/..."
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2 rounded-lg transition-all"
+                >
+                  Publier mon bilan
+                </button>
+              </form>
+            )}
+          </section>
+        </div>
+
+      </main>
+    </div>
+  );
+}
