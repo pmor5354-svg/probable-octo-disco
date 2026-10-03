@@ -80,7 +80,7 @@
   <!-- Container Principal -->
   <main class="max-w-7xl mx-auto px-4 mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-    <!-- COLONNE GAUCHE (2 cols) : Membres & Bilan Bimensuel -->
+    <!-- COLONNE GAUCHE (2 cols) : Membres & Suivi de Progression -->
     <div class="lg:col-span-2 space-y-8">
 
       <!-- Banner Echéance Janvier 2027 -->
@@ -91,7 +91,7 @@
           </div>
           <div>
             <h2 class="font-bold text-slate-100 text-sm md:text-base">Programme Longue Durée • Horizon Janvier 2027</h2>
-            <p class="text-xs text-slate-400 mt-0.5">Chaque membre développe sa compétence sur la durée avec 1 rendu obligatoire toutes les 2 semaines.</p>
+            <p class="text-xs text-slate-400 mt-0.5">Validez votre session quotidienne & présentez votre bilan au groupe tous les 14 jours.</p>
           </div>
         </div>
         <div class="bg-slate-950 border border-indigo-500/30 px-4 py-2 rounded-xl text-center">
@@ -100,15 +100,15 @@
         </div>
       </section>
 
-      <!-- Cartes des Membres de la Tribu -->
+      <!-- Cartes des Membres avec Suivi Quotidien & Progression -->
       <section class="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-xl">
         <div class="flex justify-between items-center mb-6">
           <div>
             <h2 class="text-xl font-bold text-slate-100 flex items-center gap-2">
               <i data-lucide="users" class="w-5 h-5 text-emerald-400"></i>
-              Membres & Objectifs Individuels
+              Membres & Suivi Quotidien
             </h2>
-            <p class="text-xs text-slate-400 mt-1">Avancement vers les objectifs de Janvier 2027</p>
+            <p class="text-xs text-slate-400 mt-1">Suivi du travail du jour & barres de progression individuelles</p>
           </div>
           <button onclick="renderMembers()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300">
             <i data-lucide="refresh-cw" class="w-4 h-4"></i>
@@ -124,9 +124,9 @@
       <section class="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-xl">
         <h2 class="text-xl font-bold text-slate-100 mb-4 flex items-center gap-2">
           <i data-lucide="bar-chart-3" class="w-5 h-5 text-cyan-400"></i>
-          📊 Avancement Global vers Janvier 2027
+          📊 Avancement Comparatif vers Janvier 2027
         </h2>
-        <div id="chartsContainer" class="space-y-4 pt-2">
+        <div id="chartsContainer" class="space-y-5 pt-2">
           <!-- Graphiques générés en JS -->
         </div>
       </section>
@@ -139,7 +139,7 @@
               <i data-lucide="calendar-check" class="w-5 h-5 text-indigo-400"></i>
               🎯 Registre des Comptes-Rendus Bimensuels
             </h2>
-            <p class="text-xs text-slate-400 mt-0.5">Suivi de la régularité des bilans obligatoires tous les 14 jours</p>
+            <p class="text-xs text-slate-400 mt-0.5">Suivi de l'assiduité aux réunions bimensuelles</p>
           </div>
           <span class="text-xs bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 px-3 py-1 rounded-full font-semibold">
             Sprint de 2 Semaines
@@ -151,8 +151,8 @@
             <thead class="bg-slate-950 text-slate-400 text-xs uppercase border-b border-slate-800">
               <tr>
                 <th class="p-3">Membre</th>
+                <th class="p-3">Statut Aujourd'hui</th>
                 <th class="p-3">Dernier Rendu</th>
-                <th class="p-3">Statut Bilan</th>
                 <th class="p-3">Assiduité</th>
               </tr>
             </thead>
@@ -176,20 +176,46 @@
           Mon Panneau Interactif
         </h2>
 
-        <div id="controlPanelContent">
-          <!-- Mise à jour Progression -->
-          <div class="mb-5">
-            <div class="flex justify-between text-sm mb-2">
-              <span class="text-slate-300 font-medium">Ma progression globale</span>
+        <div id="controlPanelContent" class="space-y-5">
+          
+          <!-- BOUTON : A travaillé aujourd'hui ? -->
+          <div class="p-4 rounded-xl bg-slate-950 border border-emerald-500/30 flex flex-col gap-3">
+            <div class="flex justify-between items-center">
+              <div>
+                <div class="text-xs font-bold text-slate-200">Mon activité du jour</div>
+                <div class="text-[11px] text-slate-400">Avez-vous travaillé votre compétence aujourd'hui ?</div>
+              </div>
+              <span id="myWorkedTodayBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full">
+                <!-- Statut dynamique -->
+              </span>
+            </div>
+            <button id="toggleWorkedBtn" onclick="toggleWorkedToday()" class="w-full py-2.5 rounded-xl text-xs font-bold transition-all flex justify-center items-center gap-2">
+              <i data-lucide="check-circle" class="w-4 h-4"></i> Valider ma journée de travail
+            </button>
+          </div>
+
+          <!-- Mise à jour Progression Globale (2027) -->
+          <div>
+            <div class="flex justify-between text-xs mb-2">
+              <span class="text-slate-300 font-medium">Progression Objectif 2027</span>
               <span id="myProgressVal" class="font-extrabold text-emerald-400">45%</span>
             </div>
             <input type="range" id="progressRange" min="0" max="100" value="45" oninput="updateMyProgress(this.value)" class="w-full accent-emerald-500 h-2 bg-slate-800 rounded-lg cursor-pointer">
           </div>
 
+          <!-- Mise à jour Progression Sprint Actuel (14J) -->
+          <div>
+            <div class="flex justify-between text-xs mb-2">
+              <span class="text-slate-300 font-medium">Progression du Sprint 14J en cours</span>
+              <span id="mySprintVal" class="font-extrabold text-cyan-400">60%</span>
+            </div>
+            <input type="range" id="sprintRange" min="0" max="100" value="60" oninput="updateMySprintProgress(this.value)" class="w-full accent-cyan-500 h-2 bg-slate-800 rounded-lg cursor-pointer">
+          </div>
+
           <!-- Activer/Désactiver S.O.S -->
-          <div class="mb-5 p-3 rounded-xl bg-slate-950 border border-slate-800 flex justify-between items-center">
+          <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 flex justify-between items-center">
             <div>
-              <div class="text-sm font-semibold text-slate-200">Alerte S.O.S Blocage</div>
+              <div class="text-xs font-semibold text-slate-200">Alerte S.O.S Blocage</div>
               <div class="text-[11px] text-slate-400">Demander de l'aide au groupe</div>
             </div>
             <button id="sosToggleBtn" onclick="toggleSOS()" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-400 hover:bg-red-500 hover:text-white transition-all">
@@ -204,7 +230,7 @@
             </div>
             <div>
               <div class="text-[11px] text-slate-400 uppercase font-semibold">Mon Binôme (Study Buddy)</div>
-              <div id="myBuddyName" class="text-sm font-bold text-slate-200">Awa N. (Finance)</div>
+              <div id="myBuddyName" class="text-xs font-bold text-slate-200">Awa N. (Finance)</div>
             </div>
           </div>
         </div>
@@ -288,7 +314,7 @@
 
   <!-- JavaScript Logique -->
   <script>
-    // Données réelles adaptées aux compétences métiers & créatives
+    // Données réelles des membres avec suivi quotidien et progressions
     let membersData = [
       {
         id: "m1",
@@ -296,7 +322,9 @@
         avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80",
         skill: "Stratégie TikTok & Contenu",
         target: "Générer 1M de vues & 100k abonnés d'ici Janvier 2027",
+        workedToday: true,
         progress: 45,
+        sprintProgress: 70,
         streak: 8,
         sos: false,
         kudos: 18,
@@ -311,7 +339,9 @@
         avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80",
         skill: "Finance, Audit & Gestion",
         target: "Maîtriser l'analyse financière & modèles de valorisation",
+        workedToday: true,
         progress: 55,
+        sprintProgress: 85,
         streak: 12,
         sos: false,
         kudos: 12,
@@ -326,7 +356,9 @@
         avatar: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100&auto=format&fit=crop&q=80",
         skill: "Closing & Apporteur d'Affaires",
         target: "Signer 15 contrats partenariats/entreprises d'ici 2027",
+        workedToday: false,
         progress: 30,
+        sprintProgress: 40,
         streak: 5,
         sos: true,
         sosMsg: "Besoin de conseils pour rédiger mes scripts de prospection téléphonique !",
@@ -354,7 +386,7 @@
       modal.classList.toggle("hidden");
     }
 
-    // Afficher les cartes membres
+    // Afficher les cartes membres avec statut d'activité du jour
     function renderMembers() {
       const grid = document.getElementById("membersGrid");
       grid.innerHTML = "";
@@ -378,7 +410,16 @@
               </div>
             </div>
 
-            <div class="text-xs text-slate-400 mb-2">
+            <!-- Badge statut travail du jour -->
+            <div class="mb-3 flex items-center gap-2">
+              <span class="text-[11px] text-slate-400">Aujourd'hui :</span>
+              ${m.workedToday ? 
+                '<span class="text-[10px] bg-emerald-500/20 text-emerald-400 font-bold px-2.5 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1">🟢 A travaillé aujourd\'hui</span>' : 
+                '<span class="text-[10px] bg-amber-500/20 text-amber-400 font-bold px-2.5 py-0.5 rounded-full border border-amber-500/30 flex items-center gap-1">🟠 En repos / En attente</span>'
+              }
+            </div>
+
+            <div class="text-xs text-slate-400 mb-3">
               🎯 <strong class="text-slate-300">Objectif 2027:</strong> ${m.target}
             </div>
 
@@ -388,16 +429,28 @@
               </div>
             ` : ''}
 
-            <!-- Barre de progression -->
+            <!-- Barre 1 : Progression Globale (2027) -->
             <div class="mt-3">
               <div class="flex justify-between text-xs mb-1">
-                <span class="text-slate-400">Progression Globale</span>
+                <span class="text-slate-400">Progression Globale (2027)</span>
                 <span class="font-bold text-emerald-400">${m.progress}%</span>
               </div>
               <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                <div class="bg-gradient-to-r from-emerald-500 to-cyan-400 h-full transition-all duration-500" style="width: ${m.progress}%"></div>
+                <div class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full transition-all duration-500" style="width: ${m.progress}%"></div>
               </div>
             </div>
+
+            <!-- Barre 2 : Sprint 14 jours -->
+            <div class="mt-2">
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-400">Sprint 14J Actuel</span>
+                <span class="font-bold text-cyan-400">${m.sprintProgress}%</span>
+              </div>
+              <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                <div class="bg-gradient-to-r from-cyan-500 to-indigo-400 h-full transition-all duration-500" style="width: ${m.sprintProgress}%"></div>
+              </div>
+            </div>
+
           </div>
 
           <!-- Footer carte (Badges, Kudos, Série) -->
@@ -420,21 +473,24 @@
       });
     }
 
-    // Graphiques
+    // Graphiques de progression
     function renderCharts() {
       const container = document.getElementById("chartsContainer");
       container.innerHTML = "";
 
       membersData.forEach(m => {
         const row = document.createElement("div");
-        row.className = "space-y-1";
+        row.className = "space-y-1.5 bg-slate-950 p-3 rounded-xl border border-slate-800/80";
         row.innerHTML = `
           <div class="flex justify-between text-xs">
-            <span class="text-slate-300 font-medium">${m.name} — <span class="text-slate-400">${m.skill}</span></span>
-            <span class="font-bold text-cyan-400">${m.progress}%</span>
+            <span class="text-slate-200 font-semibold flex items-center gap-2">
+              ${m.name} 
+              <span class="text-[10px] text-slate-400">(${m.skill})</span>
+            </span>
+            <span class="font-bold text-emerald-400">2027: ${m.progress}% | Sprint 14J: ${m.sprintProgress}%</span>
           </div>
-          <div class="w-full bg-slate-950 h-3 rounded-full overflow-hidden border border-slate-800/80">
-            <div class="bg-gradient-to-r from-cyan-500 to-indigo-500 h-full transition-all duration-700" style="width: ${m.progress}%"></div>
+          <div class="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden border border-slate-800">
+            <div class="bg-gradient-to-r from-emerald-500 via-cyan-400 to-indigo-500 h-full transition-all duration-700" style="width: ${m.progress}%"></div>
           </div>
         `;
         container.appendChild(row);
@@ -454,12 +510,13 @@
             <img src="${m.avatar}" class="w-6 h-6 rounded-full">
             ${m.name}
           </td>
-          <td class="p-3 text-xs text-slate-400">${m.lastReport}</td>
           <td class="p-3">
-            <span class="text-[10px] bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 px-2 py-0.5 rounded-full font-bold">
-              ✓ Rendus 14J Validés
-            </span>
+            ${m.workedToday ? 
+              '<span class="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/30">🟢 Actif aujourd\'hui</span>' : 
+              '<span class="text-[10px] text-slate-400 bg-slate-800 px-2 py-0.5 rounded-full">Inactif</span>'
+            }
           </td>
+          <td class="p-3 text-xs text-slate-400">${m.lastReport}</td>
           <td class="p-3 font-bold text-indigo-400">${m.attendance}%</td>
         `;
         tbody.appendChild(tr);
@@ -474,6 +531,26 @@
       document.getElementById("myProgressVal").innerText = me.progress + "%";
       document.getElementById("progressRange").value = me.progress;
 
+      document.getElementById("mySprintVal").innerText = me.sprintProgress + "%";
+      document.getElementById("sprintRange").value = me.sprintProgress;
+
+      // Statut "A travaillé aujourd'hui"
+      const badge = document.getElementById("myWorkedTodayBadge");
+      const toggleBtn = document.getElementById("toggleWorkedBtn");
+
+      if (me.workedToday) {
+        badge.className = "text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+        badge.innerText = "🟢 Validé";
+        toggleBtn.className = "w-full py-2.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-all flex justify-center items-center gap-2";
+        toggleBtn.innerHTML = "✓ Session du jour déjà enregistrée";
+      } else {
+        badge.className = "text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30";
+        badge.innerText = "🟠 Non validé";
+        toggleBtn.className = "w-full py-2.5 rounded-xl text-xs font-bold bg-emerald-500 text-slate-950 hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 flex justify-center items-center gap-2";
+        toggleBtn.innerHTML = "🚀 Marquer comme travaillé aujourd'hui";
+      }
+
+      // SOS
       const sosBtn = document.getElementById("sosToggleBtn");
       if (me.sos) {
         sosBtn.className = "px-3 py-1.5 rounded-lg text-xs font-bold bg-red-500 text-white shadow-lg shadow-red-500/30";
@@ -486,12 +563,34 @@
       document.getElementById("myBuddyName").innerText = me.buddy || "Aucun";
     }
 
-    // Actions utilisateur
+    // Commuter le statut "A travaillé aujourd'hui"
+    function toggleWorkedToday() {
+      const me = membersData.find(m => m.id === currentUserId);
+      if (me) {
+        me.workedToday = !me.workedToday;
+        updateMyPanel();
+        renderMembers();
+        renderAttendance();
+      }
+    }
+
+    // Mise à jour de la progression globale
     function updateMyProgress(val) {
       const me = membersData.find(m => m.id === currentUserId);
       if (me) {
         me.progress = parseInt(val);
         document.getElementById("myProgressVal").innerText = val + "%";
+        renderMembers();
+        renderCharts();
+      }
+    }
+
+    // Mise à jour de la progression du sprint 14J
+    function updateMySprintProgress(val) {
+      const me = membersData.find(m => m.id === currentUserId);
+      if (me) {
+        me.sprintProgress = parseInt(val);
+        document.getElementById("mySprintVal").innerText = val + "%";
         renderMembers();
         renderCharts();
       }
@@ -530,7 +629,9 @@
         avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${name}`,
         skill: skill,
         target: target,
+        workedToday: true,
         progress: 10,
+        sprintProgress: 20,
         streak: 1,
         sos: false,
         kudos: 1,
