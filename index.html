@@ -144,7 +144,7 @@ async function init(){
   $('bar').classList.toggle('hidden',!S.user);$('bar').classList.toggle('flex',!!S.user);
   if(!S.user)return $('auth').classList.remove('hidden');
   const {data,error}=await sb.from('profiles').select('id').eq('id',S.user.id).maybeSingle();
-  if(error)return err(error);
+  if(error)return expired(error)?recover():err(error);
   if(!data)return $('onboard').classList.remove('hidden');
   $('app').classList.remove('hidden');await loadAll();listen();
 }
@@ -158,7 +158,7 @@ async function loadAll(){
     sb.from('checkins').select('*').gte('day',since),
     sb.from('objectives').select('*').eq('user_id',S.user.id).order('id'),
     sb.from('activity').select('*').order('created_at',{ascending:false}).limit(30),sb.from('reactions').select('*'),sb.from('missions').select('*').order('id'),sb.from('mission_checks').select('*').gte('day',ds(ago(6)))]);
-  const e=p.error||c.error||o.error||a.error||r.error||ms.error||mc.error;if(e)return err(e);
+  const e=p.error||c.error||o.error||a.error||r.error||ms.error||mc.error;if(e)return expired(e)?recover():err(e);
   err(null);S.profiles=p.data;S.checks=c.data;S.objs=o.data;S.act=a.data;S.reacts=r.data;S.miss=ms.data;S.mchk=mc.data;
   S.me=S.profiles.find(x=>x.id===S.user.id);if(!S.me)return init();
   by={};S.checks.forEach(r=>{(by[r.user_id]=by[r.user_id]||{})[r.day]=r.hours});
@@ -321,6 +321,17 @@ async function addMission(e){
   const {error}=await sb.from('missions').insert({title});if(error)return err(error);$('mnew').value='';loadAll();
 }
 async function delM(id){if(confirm('Supprimer cette mission ?')){const {error}=await sb.from('missions').delete().eq('id',id);error?err(error):loadAll()}}
+
+/* ---------- Session expirée ---------- */
+const expired=e=>/jwt expired|PGRST301|invalid jwt/i.test((e&&(e.message||e.code))||'');
+let recovering=false;
+async function recover(){
+  if(recovering)return;recovering=true;setTimeout(()=>recovering=false,10000);
+  const {error}=await sb.auth.refreshSession();
+  if(!error)return init();
+  await sb.auth.signOut({scope:'local'}).catch(()=>{});
+  S.user=null;await init();err({message:'Session expirée : reconnectez-vous.'});
+}
 
 /* ---------- Démarrage ---------- */
 if(!sb){err({message:'Supabase non chargé : désactivez le bloqueur de publicités et rechargez.'})}
