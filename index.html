@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SkillSprint Pro</title>
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#0f172a"><link rel="icon" href="icon.svg">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style type="text/tailwindcss">
@@ -43,12 +44,13 @@
   </form>
 
   <div id="app" class="hidden space-y-4">
-    <div id="ann"></div>
+    <div id="ann"></div><div id="ping"></div>
     <div class="grid md:grid-cols-3 gap-4">
       <div class="card">
         <div class="flex justify-between items-center"><span class="lbl">Aujourd'hui</span><span id="badge" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400"></span></div>
         <p class="text-sm text-slate-300">Série : <b id="streak" class="text-amber-400"></b></p>
         <div class="flex gap-2 items-center"><input id="hrs" type="number" min="0.5" max="24" step="0.5" value="1" class="inp w-20" aria-label="Heures travaillées"><span class="text-xs text-slate-400">heure(s)</span></div>
+        <input id="note" maxlength="120" class="inp" placeholder="Note : 2 h de Next.js &amp; Audit…" aria-label="Note du jour">
         <button id="vbtn" class="btn w-full" onclick="toggleDay()"></button>
       </div>
       <div class="card">
@@ -77,7 +79,20 @@
       </div>
     </div>
 
-    <div class="card"><span class="lbl">Classement de la semaine</span><div id="lb" class="space-y-2"></div></div>
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="card"><div class="flex justify-between"><span class="lbl">Niveau &amp; XP</span><b id="lvl" class="text-xs text-amber-400"></b></div>
+        <div class="h-2.5 bg-slate-950 border border-slate-800 rounded-full overflow-hidden"><div id="xpbar" class="h-full bg-amber-400" style="width:0"></div></div>
+        <p id="xptxt" class="text-xs text-slate-400"></p><p class="text-[11px] text-slate-500">+10 XP par journée validée · +50 XP par série de 7 jours</p></div>
+      <div class="card"><span class="lbl">⏱ Focus</span><p id="clock" class="text-3xl font-extrabold tabular-nums">25:00</p>
+        <div class="flex gap-2"><select id="dur" class="inp w-24" aria-label="Durée" onchange="if(!pt)$('clock').textContent=this.value+':00'"><option value="25">25 min</option><option value="50">50 min</option></select><button id="pbtn" class="btn flex-1" onclick="pomo()">Démarrer</button></div>
+        <p class="text-[11px] text-slate-500">À la fin de la session, la journée est validée automatiquement.</p><button class="ghost" onclick="remind()">🔔 Rappel à 20 h</button></div>
+    </div>
+    <div class="card"><div class="flex justify-between items-center"><span class="lbl">✅ Mes missions du jour</span><b id="mcount" class="text-xs text-emerald-400"></b></div>
+      <div id="miss" class="space-y-2"></div>
+      <form class="flex gap-2" onsubmit="addMission(event)"><input id="mnew" maxlength="80" class="inp" placeholder="Nouvelle mission (ex : Lire 20 pages d'un livre)" aria-label="Nouvelle mission"><button class="btn">+</button></form>
+      <p class="text-[11px] text-slate-500">À cocher chaque jour, remises à zéro à minuit. Visibles par vous seul.</p></div>
+    <div class="card"><div class="flex justify-between items-center"><span class="lbl">Classement</span><select id="sort" class="ghost" onchange="render()" aria-label="Trier par"><option value="xp">XP</option><option value="progress">Progression</option><option value="streak">Série</option></select></div>
+      <div id="pod" class="grid grid-cols-3 gap-2 items-end"></div><div id="lb" class="space-y-2"></div></div>
     <div class="card"><span class="lbl">Signalements & kudos</span><div id="feed" class="space-y-2 max-h-72 overflow-y-auto"></div></div>
     <div id="adm" class="hidden card">
       <span class="lbl">🛠 Admin</span>
@@ -91,7 +106,7 @@
 const SUPABASE_URL='https://eorzabxddxhxuepxmyrc.supabase.co';
 const SUPABASE_KEY='sb_publishable_z-cFf2q7MIErLOmXcY8z6A_cQLLf6Sj'; // clé publique uniquement
 const sb=window.supabase&&window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-const S={user:null,me:null,profiles:[],checks:[],objs:[],act:[]};
+const S={user:null,me:null,profiles:[],checks:[],objs:[],act:[],reacts:[],miss:[],mchk:[]};
 let by={},ch=null,timer=null;
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -104,7 +119,9 @@ function stats(uid){
   for(let i=0;i<7;i++){const v=m[ds(ago(i))];if(v!==undefined){week++;h+=+v}}
   let n=0,d=new Date();if(m[ds(d)]===undefined)d.setDate(d.getDate()-1);
   while(m[ds(d)]!==undefined){n++;d.setDate(d.getDate()-1)}
-  return{m,week,h,streak:n,total:Object.keys(m).length,hours:Object.values(m).reduce((a,b)=>a+ +b,0)};
+  const days=Object.keys(m).sort();let run=0,bonus=0,prev=null,sun=0;
+  days.forEach(k=>{const t=new Date(k+'T00:00:00');run=prev&&Math.round((t-prev)/864e5)===1?run+1:1;if(run%7===0)bonus+=50;prev=t;if(t.getDay()===0)sun++});
+  return{m,week,h,streak:n,total:days.length,sun,xp:days.length*10+bonus,hours:Object.values(m).reduce((a,b)=>a+ +b,0)};
 }
 
 /* ---------- Connexion ---------- */
@@ -136,13 +153,13 @@ async function init(){
 async function loadAll(){
   if(!S.user)return;
   const since=ds(ago(90));
-  const [p,c,o,a]=await Promise.all([
+  const [p,c,o,a,r,ms,mc]=await Promise.all([
     sb.from('profiles').select('*').order('joined_at'),
     sb.from('checkins').select('*').gte('day',since),
     sb.from('objectives').select('*').eq('user_id',S.user.id).order('id'),
-    sb.from('activity').select('*').order('created_at',{ascending:false}).limit(30)]);
-  const e=p.error||c.error||o.error||a.error;if(e)return err(e);
-  err(null);S.profiles=p.data;S.checks=c.data;S.objs=o.data;S.act=a.data;
+    sb.from('activity').select('*').order('created_at',{ascending:false}).limit(30),sb.from('reactions').select('*'),sb.from('missions').select('*').order('id'),sb.from('mission_checks').select('*').gte('day',ds(ago(6)))]);
+  const e=p.error||c.error||o.error||a.error||r.error||ms.error||mc.error;if(e)return err(e);
+  err(null);S.profiles=p.data;S.checks=c.data;S.objs=o.data;S.act=a.data;S.reacts=r.data;S.miss=ms.data;S.mchk=mc.data;
   S.me=S.profiles.find(x=>x.id===S.user.id);if(!S.me)return init();
   by={};S.checks.forEach(r=>{(by[r.user_id]=by[r.user_id]||{})[r.day]=r.hours});
   render();
@@ -150,20 +167,24 @@ async function loadAll(){
 function listen(){
   if(ch)return;let t;const go=()=>{clearTimeout(t);t=setTimeout(loadAll,400)};
   ch=sb.channel('room');
-  ['profiles','checkins','objectives','activity'].forEach(tb=>ch.on('postgres_changes',{event:'*',schema:'public',table:tb},go));
+  ['profiles','checkins','objectives','activity','reactions'].forEach(tb=>ch.on('postgres_changes',{event:'*',schema:'public',table:tb},go));
   ch.subscribe();
   if(!timer)timer=setInterval(()=>{if(!document.hidden)loadAll()},30000);
 }
-const post=(kind,message)=>sb.from('activity').insert({kind,message,member_name:S.me.name}).then(r=>r.error?err(r.error):loadAll());
+const post=(kind,message,extra={})=>sb.from('activity').insert({kind,message,member_name:S.me.name,...extra}).then(r=>r.error?err(r.error):loadAll());
 
 /* ---------- Actions ---------- */
 async function toggleDay(){
   const k=ds(),done=stats(S.user.id).m[k]!==undefined;
   if(done){const {error}=await sb.from('checkins').delete().eq('user_id',S.user.id).eq('day',k);return error?err(error):loadAll()}
-  const h=Math.min(24,Math.max(0.5,parseFloat($('hrs').value)||1));
+  validate(Math.max(0.5,parseFloat($('hrs').value)||1),$('note').value.trim());
+}
+async function validate(add,note=''){
+  const k=ds(),prev=stats(S.user.id).m[k],h=Math.min(24,Math.round(((+prev||0)+add)*100)/100);
   const {error}=await sb.from('checkins').upsert({user_id:S.user.id,day:k,hours:h});
   if(error)return err(error);
-  post('work',`⚡ ${S.me.name} a validé sa journée (${h} h)`);
+  $('note').value='';
+  if(prev===undefined)post('work',`⚡ ${S.me.name} a validé sa journée (${h} h)${note?' : « '+note.slice(0,120)+' »':''}`);else loadAll();
 }
 async function saveProgress(v){const {error}=await sb.from('profiles').update({progress:+v}).eq('id',S.user.id);error?err(error):loadAll()}
 async function addObj(e){
@@ -173,7 +194,7 @@ async function addObj(e){
 async function tog(id,done){await sb.from('objectives').update({done}).eq('id',id);loadAll()}
 async function del(id){await sb.from('objectives').delete().eq('id',id);loadAll()}
 function sos(){const m=(prompt('Quel est votre blocage ?')||'').trim();if(m)post('sos',`🚨 SOS de ${S.me.name} : ${m.slice(0,250)}`)}
-function nudge(name){post('nudge',`👋 ${S.me.name} relance ${name} : on garde la série !`)}
+function nudge(id){const p=S.profiles.find(x=>x.id===id);if(p)post('nudge',`👋 ${S.me.name} relance ${p.name} : on garde la série !`,{target:id})}
 function share(){window.open('https://wa.me/?text='+encodeURIComponent('Rejoins le sprint SkillSprint 2027 avec nous : '+location.href))}
 function announce(){const m=$('anm').value.trim();if(m){post('announce',m);$('anm').value=''}}
 async function rm(id){if(confirm('Retirer ce membre du groupe ?')){const {error}=await sb.from('profiles').delete().eq('id',id);error?err(error):loadAll()}}
@@ -207,7 +228,7 @@ function render(){
   const b=P.length<2?null:(i%2===0?(P[i+1]||P[i-1]):P[i-1]);
   if(b){const bs=stats(b.id),on=bs.m[k]!==undefined;
     $('buddy').innerHTML=`<p class="font-bold truncate">${esc(b.name)}</p><p class="text-xs text-slate-400 truncate">${esc(b.goal)}</p><p class="text-xs ${on?'text-emerald-400':'text-slate-500'}">${on?'Actif aujourd\'hui':'Pas encore actif'} · 🔥${bs.streak}</p>`;
-    $('nudge').innerHTML=on?'':`<button class="ghost" onclick="nudge(${JSON.stringify(b.name).replace(/"/g,'&quot;')})">👋 Relancer</button>`;
+    $('nudge').innerHTML=on||new Date().getHours()<20?'':`<button class="ghost" onclick="nudge('${b.id}')">👋 Relancer</button>`;
   }else{$('buddy').textContent="En attente d'autres membres";$('nudge').innerHTML=''}
 
   $('objs').innerHTML=S.objs.map(o=>`<div class="flex items-center gap-2"><button onclick="tog(${o.id},${!o.done})" aria-label="Basculer">${o.done?'✅':'⬜'}</button><span class="flex-1 text-sm ${o.done?'line-through text-slate-500':''}">${esc(o.text)}</span><button class="text-slate-500" onclick="del(${o.id})" aria-label="Supprimer">✕</button></div>`).join('')||'<p class="text-xs text-slate-500">Aucun objectif pour ce sprint.</p>';
@@ -218,20 +239,88 @@ function render(){
     const c=h===undefined?'bg-slate-800':h<=1?'bg-emerald-900':h<=3?'bg-emerald-600':'bg-emerald-400';
     cells+=`<div title="${d}${h!==undefined?' · '+h+' h':''}" class="${c} w-3.5 h-3.5 rounded-sm"></div>`}
   $('heat').innerHTML=cells;
-  const B=[['🌱','1er jour',my.total>=1],['🔥','7 jours de suite',my.streak>=7],['🏆','30 jours de suite',my.streak>=30],['⏱️','20 h cumulées',my.hours>=20],['🎯','50 % atteints',n.progress>=50]];
+  const B=[['🌱','1er jour',my.total>=1],['🔥','7 jours de suite',my.streak>=7],['🏆','30 jours de suite',my.streak>=30],['🛡️','Guerrier du Dimanche (4 dimanches)',my.sun>=4],['🏃','Marathonien (42 jours)',my.total>=42],['🚀','Pionnier 2027',String(n.joined_at)<'2026-11-01'],['⏱️','20 h cumulées',my.hours>=20],['🎯','50 % atteints',n.progress>=50]];
   $('badges').innerHTML=B.map(([e,t,ok])=>`<span title="${t}" class="text-xs px-2 py-1 rounded-full border ${ok?'bg-amber-500/10 border-amber-500/40 text-amber-300':'bg-slate-900 border-slate-800 text-slate-600 grayscale'}">${e} ${t}</span>`).join('');
 
-  const rows=P.map(p=>({...p,s:stats(p.id)})).sort((a,b)=>b.s.week-a.s.week||b.s.h-a.s.h);
+  const key=$('sort').value,val=p=>key==='xp'?p.s.xp:key==='progress'?+p.progress||0:p.s.streak;
+  const rows=P.map(p=>({...p,s:stats(p.id)})).sort((a,b)=>val(b)-val(a)||b.s.week-a.s.week);
+  $('pod').innerHTML=[1,0,2].map(j=>rows[j]?`<div class="text-center"><p class="text-lg">${['🥇','🥈','🥉'][j]}</p><p class="text-xs font-bold truncate">${esc(rows[j].name)}</p><div class="${['h-20 bg-amber-500/30','h-14 bg-slate-500/30','h-10 bg-orange-700/30'][j]} rounded-t-xl flex items-center justify-center text-sm font-bold">${val(rows[j])}${key==='progress'?'%':''}</div></div>`:'<div></div>').join('');
   $('lb').innerHTML=rows.map((p,j)=>`<div class="flex items-center gap-3 p-2 rounded-xl border ${p.id===S.user.id?'bg-emerald-950/30 border-emerald-500/30':'bg-slate-950/60 border-slate-800'}">
     <span class="w-6 text-center text-sm">${['🥇','🥈','🥉'][j]||j+1}</span>
     <div class="flex-1 min-w-0"><p class="text-sm font-bold truncate">${esc(p.name)}</p><p class="text-[11px] text-slate-400 truncate">${esc(p.goal)}</p>
     <div class="h-1.5 bg-slate-800 rounded-full mt-1"><div class="h-full bg-emerald-500 rounded-full" style="width:${+p.progress||0}%"></div></div></div>
-    <div class="text-right text-[11px] text-slate-400"><b class="text-emerald-400 text-sm">${p.s.week}/7</b> j<br>🔥${p.s.streak}</div>
-    ${n.is_admin&&p.id!==S.user.id?`<button class="ghost" onclick="rm('${p.id}')" aria-label="Retirer">✕</button>`:''}</div>`).join('');
+    <div class="text-right text-[11px] text-slate-400"><b class="text-emerald-400 text-sm">${p.s.xp} XP</b><br>${p.s.week}/7 j · 🔥${p.s.streak}</div>
+    ${p.id!==S.user.id&&p.s.m[k]===undefined&&new Date().getHours()>=20?`<button class="ghost" onclick="nudge('${p.id}')" aria-label="Relancer">👋</button>`:''}${n.is_admin&&p.id!==S.user.id?`<button class="ghost" onclick="rm('${p.id}')" aria-label="Retirer">✕</button>`:''}</div>`).join('');
 
-  $('feed').innerHTML=S.act.map(a=>`<div class="bg-slate-950/70 border border-slate-800 border-l-2 ${FS[a.kind]||''} rounded-xl p-2 text-xs"><p class="text-slate-200">${esc(a.message)}</p><p class="text-[10px] text-slate-500">${new Date(a.created_at).toLocaleString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</p></div>`).join('')||'<p class="text-xs text-slate-500">Rien pour l\'instant.</p>';
-  $('adm').classList.toggle('hidden',!n.is_admin);
+  $('feed').innerHTML=S.act.map(a=>`<div class="bg-slate-950/70 border border-slate-800 border-l-2 ${FS[a.kind]||''} rounded-xl p-2 text-xs"><p class="text-slate-200">${esc(a.message)}</p><p class="text-[10px] text-slate-500">${new Date(a.created_at).toLocaleString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</p>${react(a)}</div>`).join('')||'<p class="text-xs text-slate-500">Rien pour l\'instant.</p>';
+  $('adm').classList.toggle('hidden',!n.is_admin);extras(my,k,n);missions(k);
 }
+
+/* ---------- XP, réactions, focus, rappels ---------- */
+function extras(my,k){
+  const lv=Math.floor(my.xp/100)+1;
+  $('lvl').textContent='Niveau '+lv;$('xpbar').style.width=my.xp%100+'%';
+  $('xptxt').textContent=`${my.xp} XP · encore ${100-my.xp%100} XP pour le niveau ${lv+1}`;
+  const pg=S.act.find(a=>a.kind==='nudge'&&a.target===S.user.id&&Date.now()-new Date(a.created_at)<864e5);
+  $('ping').innerHTML=pg&&my.m[k]===undefined?`<div class="card border-sky-500/40 text-sm">👋 ${esc(pg.member_name)} te relance : valide ta journée avant minuit !</div>`:'';
+}
+function react(a){
+  if(a.kind!=='work')return'';
+  return '<div class="flex gap-1 mt-1">'+['🔥','💪','👏'].map(e=>{
+    const rs=S.reacts.filter(r=>r.activity_id===a.id&&r.emoji===e),mine=rs.some(r=>r.user_id===S.user.id);
+    return `<button onclick="react2(${a.id},'${e}',${mine})" class="text-[11px] px-1.5 py-0.5 rounded-full border ${mine?'border-emerald-500 bg-emerald-500/10':'border-slate-700'}">${e}${rs.length?' '+rs.length:''}</button>`}).join('')+'</div>';
+}
+async function react2(id,emoji,mine){
+  const {error}=await(mine?sb.from('reactions').delete().eq('activity_id',id).eq('user_id',S.user.id).eq('emoji',emoji):sb.from('reactions').insert({activity_id:id,emoji}));
+  error?err(error):loadAll();
+}
+let pt=null;
+function pomo(){
+  if(pt){clearInterval(pt);pt=null;$('pbtn').textContent='Démarrer';$('clock').textContent=$('dur').value+':00';return}
+  const mins=+$('dur').value,end=Date.now()+mins*6e4;$('pbtn').textContent='Arrêter';
+  const tick=()=>{const s=Math.max(0,Math.round((end-Date.now())/1000));
+    $('clock').textContent=`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+    if(!s){clearInterval(pt);pt=null;$('pbtn').textContent='Démarrer';notify('⏱ Session terminée','Journée validée automatiquement.');navigator.vibrate&&navigator.vibrate(300);validate(mins/60,'Session focus de '+mins+' min')}};
+  tick();pt=setInterval(tick,1000);
+}
+function notify(t,b){
+  if(!('Notification' in window)||Notification.permission!=='granted')return;
+  const sw=navigator.serviceWorker&&navigator.serviceWorker.ready;
+  (sw?sw.then(r=>r.showNotification(t,{body:b,icon:'icon.svg'})):Promise.reject()).catch(()=>new Notification(t,{body:b}));
+}
+async function remind(){
+  if(!('Notification' in window))return err({message:'Notifications non supportées sur ce navigateur.'});
+  if(await Notification.requestPermission()!=='granted')return err({message:'Notifications refusées : autorisez-les dans les réglages du navigateur.'});
+  try{localStorage.setItem('ss_remind','1')}catch(e){}
+  notify('🔔 Rappel activé',"Vous serez prévenu à 20 h si la journée n'est pas validée.");
+}
+setInterval(()=>{ // rappel local à 20 h (fonctionne quand l'appli est ouverte)
+  try{
+    const k=ds();
+    if(!S.me||localStorage.getItem('ss_remind')!=='1'||new Date().getHours()<20||localStorage.getItem('ss_last')===k||stats(S.user.id).m[k]!==undefined)return;
+    localStorage.setItem('ss_last',k);notify('⏳ SkillSprint','Pas encore validé aujourd\'hui : valide ta journée avant minuit !');
+  }catch(e){}
+},60000);
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+
+/* ---------- Missions personnalisées ---------- */
+function missions(k){
+  const M=S.miss,on=new Set(S.mchk.filter(c=>c.day===k).map(c=>c.mission_id));
+  const wk=id=>S.mchk.filter(c=>c.mission_id===id).length,left=M.filter(m=>!on.has(m.id)).length;
+  $('mcount').textContent=M.length?`${M.length-left}/${M.length}`:'';
+  $('miss').innerHTML=M.map(m=>`<div class="flex items-center gap-2"><button onclick="tickM(${m.id},${on.has(m.id)})" aria-label="Cocher">${on.has(m.id)?'✅':'⬜'}</button><span class="flex-1 text-sm ${on.has(m.id)?'line-through text-slate-500':''}">${esc(m.title)}</span><span class="text-[11px] text-slate-500">${wk(m.id)}/7</span><button class="text-slate-500" onclick="delM(${m.id})" aria-label="Supprimer">✕</button></div>`).join('')||'<p class="text-xs text-slate-500">Ajoutez vos missions (lire, réviser, sport…).</p>';
+  if(M.length&&!left&&stats(S.user.id).m[k]===undefined)$('miss').innerHTML+='<button class="btn w-full" onclick="toggleDay()">🎉 Tout est fait : valider ma journée</button>';
+  $('mnew').disabled=M.length>=10;
+}
+async function tickM(id,on){
+  const q=on?sb.from('mission_checks').delete().eq('mission_id',id).eq('day',ds()):sb.from('mission_checks').insert({mission_id:id,day:ds()});
+  const {error}=await q;error?err(error):loadAll();
+}
+async function addMission(e){
+  e.preventDefault();const title=$('mnew').value.trim();if(!title)return;
+  const {error}=await sb.from('missions').insert({title});if(error)return err(error);$('mnew').value='';loadAll();
+}
+async function delM(id){if(confirm('Supprimer cette mission ?')){const {error}=await sb.from('missions').delete().eq('id',id);error?err(error):loadAll()}}
 
 /* ---------- Démarrage ---------- */
 if(!sb){err({message:'Supabase non chargé : désactivez le bloqueur de publicités et rechargez.'})}
