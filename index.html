@@ -1,375 +1,249 @@
 <!DOCTYPE html>
-<html lang="fr" class="h-full bg-slate-900 text-slate-100">
+<html lang="fr" class="h-full bg-slate-950">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SkillSprint Pro - Dashboard</title>
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- FontAwesome -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- Supabase JS Client -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <style>
-    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-    .custom-scrollbar::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(51, 65, 85, 0.8); border-radius: 9999px; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SkillSprint Pro</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style type="text/tailwindcss">
+.card{@apply bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3}
+.btn{@apply px-4 py-2 rounded-xl text-sm font-bold bg-emerald-500 text-slate-950 hover:bg-emerald-600 disabled:opacity-40}
+.ghost{@apply px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700}
+.inp{@apply w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm placeholder-slate-500 focus:outline-none focus:border-emerald-500}
+.lbl{@apply text-[11px] font-semibold uppercase tracking-wider text-slate-400}
+</style>
 </head>
-<body class="h-full flex flex-col font-sans antialiased bg-slate-950 text-slate-100 overflow-x-hidden">
+<body class="min-h-full bg-slate-950 text-slate-100 antialiased">
+<div id="err" class="hidden bg-rose-950 border-b border-rose-500/40 text-rose-200 text-xs px-4 py-2"></div>
+<header class="sticky top-0 z-30 bg-slate-900/90 backdrop-blur border-b border-slate-800">
+  <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between gap-2">
+    <div><b class="text-white">⚡ SkillSprint</b> <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">PRO</span>
+      <p id="left" class="text-[11px] text-slate-400"></p></div>
+    <div id="bar" class="hidden items-center gap-2">
+      <button class="ghost" onclick="share()">📲 WhatsApp</button>
+      <button class="ghost" onclick="out()">Sortir</button>
+    </div>
+  </div>
+</header>
 
-  <script>
-    // Configuration Supabase intégrée
-    const SUPABASE_URL = "https://eorzabxddxhxuepxmyrc.supabase.co";
-    const SUPABASE_ANON_KEY = "sb_publishable_z-cFf2q7MIErLOmXcY8z6A_cQLLf6Sj";
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  </script>
+<main class="max-w-5xl mx-auto px-4 py-5 space-y-4">
+  <section id="auth" class="hidden card max-w-md mx-auto">
+    <h2 class="text-xl font-extrabold text-white">Rejoignez le Sprint 2027</h2>
+    <input id="em" type="email" class="inp" placeholder="E-mail" autocomplete="email" aria-label="E-mail">
+    <input id="pw" type="password" class="inp" placeholder="Mot de passe (6 caractères min.)" autocomplete="current-password" aria-label="Mot de passe">
+    <div class="flex gap-2"><button class="btn flex-1" onclick="auth('in')">Se connecter</button><button class="ghost flex-1" onclick="auth('up')">Créer un compte</button></div>
+  </section>
 
-  <!-- Top Navigation Bar -->
-  <header class="bg-slate-900/80 backdrop-blur border-b border-slate-800 sticky top-0 z-40">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between h-16 gap-2">
-        <div class="flex items-center gap-3 min-w-0">
-          <div class="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 font-bold text-xl shadow-lg shadow-emerald-500/20">
-            <i class="fa-solid font-bold fa-bolt"></i>
-          </div>
-          <div class="min-w-0">
-            <h1 class="font-extrabold text-lg tracking-tight text-white flex items-center gap-2">
-              SkillSprint <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">PRO</span>
-            </h1>
-            <p class="text-xs text-slate-400 truncate">Janvier 2027 · <span id="daysLeft">Calcul en cours...</span></p>
-          </div>
-        </div>
+  <form id="onboard" class="hidden card max-w-md mx-auto" onsubmit="saveProfile(event)">
+    <h2 class="text-xl font-extrabold text-white">Votre profil</h2>
+    <input id="nm" required maxlength="40" class="inp" placeholder="Nom / pseudo" aria-label="Nom">
+    <input id="gl" required maxlength="80" class="inp" placeholder="Objectif (ex: Audit, Dev Web)" aria-label="Objectif">
+    <button class="btn w-full">Rejoindre le groupe</button>
+  </form>
 
-        <div class="flex items-center gap-2 sm:gap-3 shrink-0">
-          <span class="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
-            <span id="statusDot" class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-            <span id="statusText">Connecté</span>
-          </span>
-
-          <button id="sosBtn" type="button" onclick="triggerSOS()" aria-label="SOS Support" class="hidden bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 px-3 py-1.5 rounded-lg text-sm font-medium transition items-center gap-2">
-            <i class="fa-solid fa-triangle-exclamation animate-pulse"></i>
-            <span class="hidden sm:inline">SOS Support</span>
-          </button>
-
-          <div id="userProfileHeader" class="hidden items-center gap-2 pl-3 border-l border-slate-800">
-            <div id="userAvatar" class="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center font-bold text-xs uppercase text-white shadow"></div>
-            <span id="userName" class="text-sm font-medium text-slate-200 hidden sm:inline"></span>
-            <button type="button" onclick="logout()" title="Déconnexion" aria-label="Déconnexion" class="text-slate-400 hover:text-slate-200 ml-1 p-1">
-              <i class="fa-solid fa-right-from-bracket"></i>
-            </button>
-          </div>
-        </div>
+  <div id="app" class="hidden space-y-4">
+    <div id="ann"></div>
+    <div class="grid md:grid-cols-3 gap-4">
+      <div class="card">
+        <div class="flex justify-between items-center"><span class="lbl">Aujourd'hui</span><span id="badge" class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400"></span></div>
+        <p class="text-sm text-slate-300">Série : <b id="streak" class="text-amber-400"></b></p>
+        <div class="flex gap-2 items-center"><input id="hrs" type="number" min="0.5" max="24" step="0.5" value="1" class="inp w-20" aria-label="Heures travaillées"><span class="text-xs text-slate-400">heure(s)</span></div>
+        <button id="vbtn" class="btn w-full" onclick="toggleDay()"></button>
+      </div>
+      <div class="card">
+        <div class="flex justify-between"><span class="lbl">Cap janvier 2027</span><b id="pct" class="text-xs text-emerald-400"></b></div>
+        <p id="goal" class="font-bold truncate"></p>
+        <div class="h-2.5 bg-slate-950 border border-slate-800 rounded-full overflow-hidden"><div id="bar2" class="h-full bg-emerald-500 transition-all" style="width:0"></div></div>
+        <input id="sl" type="range" min="0" max="100" value="0" class="w-full accent-emerald-500" aria-label="Progression" oninput="$('pct').textContent=this.value+'%';$('bar2').style.width=this.value+'%'" onchange="saveProgress(this.value)">
+      </div>
+      <div class="card">
+        <span class="lbl">Binôme</span>
+        <div id="buddy" class="text-sm"></div>
+        <div class="flex gap-2 flex-wrap"><button class="ghost" onclick="post('kudos','🙌 '+S.me.name+' envoie des kudos au groupe !')">🙌 Kudos</button><button class="ghost" onclick="sos()">🚨 SOS</button><span id="nudge"></span></div>
       </div>
     </div>
-  </header>
 
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-
-    <!-- Bannière d'inscription -->
-    <section id="joinBanner" class="bg-gradient-to-r from-slate-900 via-emerald-950/40 to-slate-900 border border-emerald-500/30 rounded-2xl p-6 relative overflow-hidden shadow-2xl">
-      <div class="max-w-2xl relative z-10 space-y-4">
-        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-          <i class="fa-solid fa-users"></i> Session Bi-Hebdomadaire Active
-        </span>
-        <h2 class="text-2xl sm:text-3xl font-extrabold text-white">Rejoignez le Sprint de Groupe jusqu'en 2027 !</h2>
-        <p class="text-slate-300 text-sm sm:text-base leading-relaxed">
-          Suivez vos progrès, retrouvez votre binôme d'étude et gardez une régularité irréprochable grâce au suivi collectif.
-        </p>
-        <form id="joinForm" onsubmit="registerUser(event)" class="flex flex-col sm:flex-row gap-3 pt-2">
-          <div class="flex-1">
-            <label for="regName" class="sr-only">Votre nom ou pseudo</label>
-            <input type="text" id="regName" required maxlength="40" placeholder="Votre nom / pseudo" class="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 text-sm">
-          </div>
-          <div class="flex-1">
-            <label for="regGoal" class="sr-only">Votre objectif</label>
-            <input type="text" id="regGoal" required maxlength="80" placeholder="Ex: Finance / Audit / Dev Web" class="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 text-sm">
-          </div>
-          <button type="submit" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-6 py-2.5 rounded-xl transition shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 text-sm">
-            <i class="fa-solid fa-user-plus"></i> Rejoindre le Groupe
-          </button>
-        </form>
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="card">
+        <span class="lbl">Objectifs du sprint (3 max)</span>
+        <div id="objs" class="space-y-2"></div>
+        <form class="flex gap-2" onsubmit="addObj(event)"><input id="onew" maxlength="100" class="inp" placeholder="Nouvel objectif" aria-label="Nouvel objectif"><button class="btn">+</button></form>
       </div>
-      <div class="absolute -right-10 -bottom-10 opacity-10 text-emerald-400 pointer-events-none">
-        <i class="fa-solid fa-trophy text-[180px]"></i>
+      <div class="card">
+        <span class="lbl">Ma régularité (12 semaines)</span>
+        <div class="overflow-x-auto"><div id="heat" class="grid grid-rows-7 grid-flow-col gap-1 w-max"></div></div>
+        <div id="badges" class="flex flex-wrap gap-1.5"></div>
       </div>
-    </section>
+    </div>
 
-    <!-- Tableau de bord personnel -->
-    <section id="userDashboard" class="hidden grid grid-cols-1 md:grid-cols-3 gap-4">
-      <!-- Card 1: Émargement -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between space-y-4">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Émargement du Jour</span>
-          <span id="todayBadge" class="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-400 border border-slate-700">Non validé</span>
-        </div>
-        <div>
-          <h3 class="text-xl font-bold text-white mb-1">Avez-vous travaillé aujourd'hui ?</h3>
-          <p class="text-xs text-slate-400">Série actuelle : <span id="streakText" class="font-bold text-amber-400">0 jour</span></p>
-        </div>
-        <button id="markWorkedBtn" type="button" onclick="toggleTodayWork()" class="w-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold py-2.5 rounded-xl transition flex items-center justify-center gap-2 text-sm">
-          <i class="fa-solid fa-check-double"></i> <span id="markBtnText">Marquer comme Travaillé</span>
-        </button>
-      </div>
+    <div class="card"><span class="lbl">Classement de la semaine</span><div id="lb" class="space-y-2"></div></div>
+    <div class="card"><span class="lbl">Signalements & kudos</span><div id="feed" class="space-y-2 max-h-72 overflow-y-auto"></div></div>
+    <div id="adm" class="hidden card">
+      <span class="lbl">🛠 Admin</span>
+      <div class="flex gap-2"><input id="anm" maxlength="250" class="inp" placeholder="Message du jour pour tout le groupe" aria-label="Message du jour"><button class="btn" onclick="announce()">Publier</button></div>
+      <button class="ghost" onclick="csv()">⬇ Exporter en CSV</button>
+    </div>
+  </div>
+</main>
 
-      <!-- Card 2: Cap Janvier 2027 -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between space-y-4">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Cap Janvier 2027</span>
-          <span id="myOverallPercent" class="text-xs font-bold text-emerald-400">0%</span>
-        </div>
-        <div>
-          <h3 id="myGoalTitle" class="text-lg font-bold text-white truncate">Mon Objectif Pro</h3>
-          <div class="w-full bg-slate-950 rounded-full h-3 mt-3 overflow-hidden border border-slate-800">
-            <div id="myOverallBar" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full w-0 transition-all duration-500"></div>
-          </div>
-        </div>
-        <div class="flex items-center gap-2">
-          <input type="range" id="overallSlider" min="0" max="100" value="0"
-                 oninput="previewProgress(this.value)" onchange="saveProgress(this.value)"
-                 class="w-full accent-emerald-500 cursor-pointer">
-        </div>
-      </div>
+<script>
+const SUPABASE_URL='https://eorzabxddxhxuepxmyrc.supabase.co';
+const SUPABASE_KEY='sb_publishable_z-cFf2q7MIErLOmXcY8z6A_cQLLf6Sj'; // clé publique uniquement
+const sb=window.supabase&&window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const S={user:null,me:null,profiles:[],checks:[],objs:[],act:[]};
+let by={},ch=null,timer=null;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ds=(d=new Date())=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const ago=n=>{const d=new Date();d.setDate(d.getDate()-n);return d};
+function err(e){const b=$('err');b.textContent=e?(e.message||String(e)):'';b.classList.toggle('hidden',!e)}
 
-      <!-- Card 3: Sprint / Kudos -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between space-y-4">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Sprint Bi-Hebdomadaire</span>
-          <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-teal-400 border border-slate-700">14 Jours</span>
-        </div>
-        <div>
-          <p class="text-xs text-slate-400 mb-1">Binôme / Équipe</p>
-          <div class="flex items-center gap-3 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
-            <div class="w-8 h-8 rounded-full bg-teal-500/20 text-teal-300 flex items-center justify-center font-bold text-xs">
-              <i class="fa-solid fa-user-group"></i>
-            </div>
-            <div class="overflow-hidden">
-              <p id="buddyName" class="text-sm font-semibold text-slate-200 truncate">Groupe Connecté</p>
-              <p id="buddyGoal" class="text-[11px] text-slate-500 truncate">Progression partagée</p>
-            </div>
-          </div>
-        </div>
-        <button type="button" onclick="sendKudosToGroup()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-medium py-2 rounded-xl transition text-xs flex items-center justify-center gap-2">
-          <i class="fa-solid fa-hands-clapping text-amber-400"></i> Envoyer des Kudos au Groupe
-        </button>
-      </div>
-    </section>
+function stats(uid){
+  const m=by[uid]||{};let week=0,h=0;
+  for(let i=0;i<7;i++){const v=m[ds(ago(i))];if(v!==undefined){week++;h+=+v}}
+  let n=0,d=new Date();if(m[ds(d)]===undefined)d.setDate(d.getDate()-1);
+  while(m[ds(d)]!==undefined){n++;d.setDate(d.getDate()-1)}
+  return{m,week,h,streak:n,total:Object.keys(m).length,hours:Object.values(m).reduce((a,b)=>a+ +b,0)};
+}
 
-    <!-- Membres du groupe synchronisés en temps réel -->
-    <section class="space-y-4">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
-        <div>
-          <h2 class="text-xl font-bold text-white flex items-center gap-2">
-            <i class="fa-solid fa-users text-emerald-400"></i> Membres du Sprint Groupe
-          </h2>
-          <p class="text-xs text-slate-400">Synchronisé en direct avec tous vos potes</p>
-        </div>
-        <div class="flex items-center gap-2 text-xs">
-          <span class="flex items-center gap-1.5 px-3 py-1 bg-slate-900 border border-slate-800 rounded-lg text-slate-300">
-            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-            <span id="memberCount">0 membre(s)</span>
-          </span>
-          <button onclick="fetchMembers()" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 border border-slate-700 font-medium">
-            <i class="fa-solid fa-rotate"></i>
-          </button>
-        </div>
-      </div>
+/* ---------- Connexion ---------- */
+async function auth(mode){
+  err(null);const email=$('em').value.trim(),password=$('pw').value;
+  const r=mode==='up'?await sb.auth.signUp({email,password}):await sb.auth.signInWithPassword({email,password});
+  if(r.error)return err(r.error);
+  if(mode==='up'&&!r.data.session)err({message:"Compte créé : confirmez l'e-mail reçu, puis connectez-vous."});
+}
+function out(){sb.removeAllChannels();ch=null;sb.auth.signOut()}
+async function saveProfile(e){
+  e.preventDefault();const name=$('nm').value.trim(),goal=$('gl').value.trim();
+  const {error}=await sb.from('profiles').insert({id:S.user.id,name,goal});
+  if(error)return err(error);
+  await sb.from('activity').insert({kind:'join',member_name:name,message:`🎉 ${name} a rejoint le sprint !`});
+  init();
+}
+async function init(){
+  ['auth','onboard','app'].forEach(v=>$(v).classList.add('hidden'));
+  $('bar').classList.toggle('hidden',!S.user);$('bar').classList.toggle('flex',!!S.user);
+  if(!S.user)return $('auth').classList.remove('hidden');
+  const {data,error}=await sb.from('profiles').select('id').eq('id',S.user.id).maybeSingle();
+  if(error)return err(error);
+  if(!data)return $('onboard').classList.remove('hidden');
+  $('app').classList.remove('hidden');await loadAll();listen();
+}
 
-      <div id="membersList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+/* ---------- Données ---------- */
+async function loadAll(){
+  if(!S.user)return;
+  const since=ds(ago(90));
+  const [p,c,o,a]=await Promise.all([
+    sb.from('profiles').select('*').order('joined_at'),
+    sb.from('checkins').select('*').gte('day',since),
+    sb.from('objectives').select('*').eq('user_id',S.user.id).order('id'),
+    sb.from('activity').select('*').order('created_at',{ascending:false}).limit(30)]);
+  const e=p.error||c.error||o.error||a.error;if(e)return err(e);
+  err(null);S.profiles=p.data;S.checks=c.data;S.objs=o.data;S.act=a.data;
+  S.me=S.profiles.find(x=>x.id===S.user.id);if(!S.me)return init();
+  by={};S.checks.forEach(r=>{(by[r.user_id]=by[r.user_id]||{})[r.day]=r.hours});
+  render();
+}
+function listen(){
+  if(ch)return;let t;const go=()=>{clearTimeout(t);t=setTimeout(loadAll,400)};
+  ch=sb.channel('room');
+  ['profiles','checkins','objectives','activity'].forEach(tb=>ch.on('postgres_changes',{event:'*',schema:'public',table:tb},go));
+  ch.subscribe();
+  if(!timer)timer=setInterval(()=>{if(!document.hidden)loadAll()},30000);
+}
+const post=(kind,message)=>sb.from('activity').insert({kind,message,member_name:S.me.name}).then(r=>r.error?err(r.error):loadAll());
 
-      <div id="emptyMembersNotice" class="hidden bg-slate-900/40 border border-dashed border-slate-800 rounded-2xl p-8 text-center space-y-3">
-        <i class="fa-solid fa-user-slash text-4xl text-slate-600"></i>
-        <h3 class="text-base font-semibold text-slate-300">Aucun membre enregistré pour l'instant</h3>
-        <p class="text-xs text-slate-500 max-w-sm mx-auto">Inscrivez-vous ci-dessus pour apparaître dans le groupe !</p>
-      </div>
-    </section>
+/* ---------- Actions ---------- */
+async function toggleDay(){
+  const k=ds(),done=stats(S.user.id).m[k]!==undefined;
+  if(done){const {error}=await sb.from('checkins').delete().eq('user_id',S.user.id).eq('day',k);return error?err(error):loadAll()}
+  const h=Math.min(24,Math.max(0.5,parseFloat($('hrs').value)||1));
+  const {error}=await sb.from('checkins').upsert({user_id:S.user.id,day:k,hours:h});
+  if(error)return err(error);
+  post('work',`⚡ ${S.me.name} a validé sa journée (${h} h)`);
+}
+async function saveProgress(v){const {error}=await sb.from('profiles').update({progress:+v}).eq('id',S.user.id);error?err(error):loadAll()}
+async function addObj(e){
+  e.preventDefault();const text=$('onew').value.trim();if(!text||S.objs.length>=3)return;
+  const {error}=await sb.from('objectives').insert({text});if(error)return err(error);$('onew').value='';loadAll();
+}
+async function tog(id,done){await sb.from('objectives').update({done}).eq('id',id);loadAll()}
+async function del(id){await sb.from('objectives').delete().eq('id',id);loadAll()}
+function sos(){const m=(prompt('Quel est votre blocage ?')||'').trim();if(m)post('sos',`🚨 SOS de ${S.me.name} : ${m.slice(0,250)}`)}
+function nudge(name){post('nudge',`👋 ${S.me.name} relance ${name} : on garde la série !`)}
+function share(){window.open('https://wa.me/?text='+encodeURIComponent('Rejoins le sprint SkillSprint 2027 avec nous : '+location.href))}
+function announce(){const m=$('anm').value.trim();if(m){post('announce',m);$('anm').value=''}}
+async function rm(id){if(confirm('Retirer ce membre du groupe ?')){const {error}=await sb.from('profiles').delete().eq('id',id);error?err(error):loadAll()}}
+function csv(){
+  const safe=v=>{v=String(v??'');if(/^[=+\-@]/.test(v))v="'"+v;return `"${v.replace(/"/g,'""')}"`};
+  const rows=[['Nom','Objectif','Progression %','Série','Jours cette semaine','Heures cette semaine']]
+    .concat(S.profiles.map(p=>{const s=stats(p.id);return[p.name,p.goal,p.progress,s.streak,s.week,s.h]}));
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\ufeff'+rows.map(r=>r.map(safe).join(',')).join('\n')],{type:'text/csv'}));
+  a.download='skillsprint.csv';a.click();
+}
 
-  </main>
+/* ---------- Rendu ---------- */
+const FS={work:'border-l-amber-500',kudos:'border-l-emerald-500',join:'border-l-emerald-500',sos:'border-l-rose-500',nudge:'border-l-sky-500',announce:'border-l-yellow-400'};
+function render(){
+  const k=ds(),my=stats(S.user.id),n=S.me,done=my.m[k]!==undefined;
+  $('left').textContent=`${n.name} · ${Math.max(0,Math.ceil((new Date(2027,0,1)-new Date())/864e5))} jours avant janvier 2027`;
+  const an=S.act.find(a=>a.kind==='announce');
+  $('ann').innerHTML=an?`<div class="card border-yellow-500/40 text-sm">📢 ${esc(an.message)}</div>`:'';
 
-  <script>
-    let currentUser = JSON.parse(localStorage.getItem("skillsprint_current_user") || "null");
-    let members = [];
+  $('badge').textContent=done?'Validé':'Non validé';
+  $('badge').className='text-xs px-2 py-0.5 rounded-full '+(done?'bg-emerald-500/20 text-emerald-400':'bg-slate-800 text-slate-400');
+  $('streak').textContent=`${my.streak} jour${my.streak>1?'s':''}`;
+  $('vbtn').textContent=done?'Annuler la validation':'Valider ma journée';
+  if(document.activeElement!==$('hrs'))$('hrs').value=done?my.m[k]:1;
 
-    document.addEventListener("DOMContentLoaded", () => {
-      calculateDaysLeft();
-      fetchMembers();
-      renderApp();
+  $('goal').textContent=n.goal;
+  if(document.activeElement!==$('sl')){$('sl').value=n.progress;$('pct').textContent=n.progress+'%';$('bar2').style.width=n.progress+'%'}
 
-      // Écoute des changements en direct via Supabase Realtime
-      supabaseClient
-        .channel('public:members')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, () => {
-          fetchMembers();
-        })
-        .subscribe();
-    });
+  const P=S.profiles,i=P.findIndex(p=>p.id===S.user.id);
+  const b=P.length<2?null:(i%2===0?(P[i+1]||P[i-1]):P[i-1]);
+  if(b){const bs=stats(b.id),on=bs.m[k]!==undefined;
+    $('buddy').innerHTML=`<p class="font-bold truncate">${esc(b.name)}</p><p class="text-xs text-slate-400 truncate">${esc(b.goal)}</p><p class="text-xs ${on?'text-emerald-400':'text-slate-500'}">${on?'Actif aujourd\'hui':'Pas encore actif'} · 🔥${bs.streak}</p>`;
+    $('nudge').innerHTML=on?'':`<button class="ghost" onclick="nudge(${JSON.stringify(b.name).replace(/"/g,'&quot;')})">👋 Relancer</button>`;
+  }else{$('buddy').textContent="En attente d'autres membres";$('nudge').innerHTML=''}
 
-    function calculateDaysLeft() {
-      const targetDate = new Date("2027-01-01T00:00:00");
-      const diffDays = Math.ceil((targetDate - new Date()) / (1000 * 60 * 60 * 24));
-      document.getElementById("daysLeft").innerText = diffDays > 0 ? `${diffDays} jours restants` : "Cap atteint !";
-    }
+  $('objs').innerHTML=S.objs.map(o=>`<div class="flex items-center gap-2"><button onclick="tog(${o.id},${!o.done})" aria-label="Basculer">${o.done?'✅':'⬜'}</button><span class="flex-1 text-sm ${o.done?'line-through text-slate-500':''}">${esc(o.text)}</span><button class="text-slate-500" onclick="del(${o.id})" aria-label="Supprimer">✕</button></div>`).join('')||'<p class="text-xs text-slate-500">Aucun objectif pour ce sprint.</p>';
+  $('onew').disabled=S.objs.length>=3;
 
-    async function fetchMembers() {
-      const { data, error } = await supabaseClient
-        .from('members')
-        .select('*')
-        .order('created_at', { ascending: false });
+  let cells='';
+  for(let j=83;j>=0;j--){const d=ds(ago(j)),h=my.m[d];
+    const c=h===undefined?'bg-slate-800':h<=1?'bg-emerald-900':h<=3?'bg-emerald-600':'bg-emerald-400';
+    cells+=`<div title="${d}${h!==undefined?' · '+h+' h':''}" class="${c} w-3.5 h-3.5 rounded-sm"></div>`}
+  $('heat').innerHTML=cells;
+  const B=[['🌱','1er jour',my.total>=1],['🔥','7 jours de suite',my.streak>=7],['🏆','30 jours de suite',my.streak>=30],['⏱️','20 h cumulées',my.hours>=20],['🎯','50 % atteints',n.progress>=50]];
+  $('badges').innerHTML=B.map(([e,t,ok])=>`<span title="${t}" class="text-xs px-2 py-1 rounded-full border ${ok?'bg-amber-500/10 border-amber-500/40 text-amber-300':'bg-slate-900 border-slate-800 text-slate-600 grayscale'}">${e} ${t}</span>`).join('');
 
-      if (!error && data) {
-        members = data;
-        renderMembers();
-      }
-    }
+  const rows=P.map(p=>({...p,s:stats(p.id)})).sort((a,b)=>b.s.week-a.s.week||b.s.h-a.s.h);
+  $('lb').innerHTML=rows.map((p,j)=>`<div class="flex items-center gap-3 p-2 rounded-xl border ${p.id===S.user.id?'bg-emerald-950/30 border-emerald-500/30':'bg-slate-950/60 border-slate-800'}">
+    <span class="w-6 text-center text-sm">${['🥇','🥈','🥉'][j]||j+1}</span>
+    <div class="flex-1 min-w-0"><p class="text-sm font-bold truncate">${esc(p.name)}</p><p class="text-[11px] text-slate-400 truncate">${esc(p.goal)}</p>
+    <div class="h-1.5 bg-slate-800 rounded-full mt-1"><div class="h-full bg-emerald-500 rounded-full" style="width:${+p.progress||0}%"></div></div></div>
+    <div class="text-right text-[11px] text-slate-400"><b class="text-emerald-400 text-sm">${p.s.week}/7</b> j<br>🔥${p.s.streak}</div>
+    ${n.is_admin&&p.id!==S.user.id?`<button class="ghost" onclick="rm('${p.id}')" aria-label="Retirer">✕</button>`:''}</div>`).join('');
 
-    async function registerUser(e) {
-      e.preventDefault();
-      const name = document.getElementById("regName").value.trim();
-      const goal = document.getElementById("regGoal").value.trim();
+  $('feed').innerHTML=S.act.map(a=>`<div class="bg-slate-950/70 border border-slate-800 border-l-2 ${FS[a.kind]||''} rounded-xl p-2 text-xs"><p class="text-slate-200">${esc(a.message)}</p><p class="text-[10px] text-slate-500">${new Date(a.created_at).toLocaleString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</p></div>`).join('')||'<p class="text-xs text-slate-500">Rien pour l\'instant.</p>';
+  $('adm').classList.toggle('hidden',!n.is_admin);
+}
 
-      if (!name || !goal) return;
-
-      const newUser = {
-        id: "usr_" + Date.now(),
-        name: name,
-        goal: goal,
-        worked_today: true,
-        streak: 1,
-        progress: 0
-      };
-
-      const { error } = await supabaseClient.from('members').insert([newUser]);
-
-      if (!error) {
-        currentUser = newUser;
-        localStorage.setItem("skillsprint_current_user", JSON.stringify(currentUser));
-        await fetchMembers();
-        renderApp();
-      } else {
-        alert("Erreur lors de l'enregistrement : " + error.message);
-      }
-    }
-
-    async function toggleTodayWork() {
-      if (!currentUser) return;
-      currentUser.worked_today = !currentUser.worked_today;
-      currentUser.streak += currentUser.worked_today ? 1 : -1;
-      if (currentUser.streak < 0) currentUser.streak = 0;
-
-      await supabaseClient.from('members').update({
-        worked_today: currentUser.worked_today,
-        streak: currentUser.streak
-      }).eq('id', currentUser.id);
-
-      localStorage.setItem("skillsprint_current_user", JSON.stringify(currentUser));
-      await fetchMembers();
-      renderApp();
-    }
-
-    function previewProgress(val) {
-      document.getElementById("myOverallPercent").innerText = val + "%";
-      document.getElementById("myOverallBar").style.width = val + "%";
-    }
-
-    async function saveProgress(val) {
-      if (!currentUser) return;
-      currentUser.progress = parseInt(val);
-      await supabaseClient.from('members').update({ progress: currentUser.progress }).eq('id', currentUser.id);
-      localStorage.setItem("skillsprint_current_user", JSON.stringify(currentUser));
-      await fetchMembers();
-    }
-
-    function sendKudosToGroup() {
-      alert("👏 Kudos envoyés au groupe !");
-    }
-
-    function triggerSOS() {
-      const msg = prompt("Quel est votre blocage ?");
-      if (msg) alert("🚨 SOS envoyé !");
-    }
-
-    function logout() {
-      currentUser = null;
-      localStorage.removeItem("skillsprint_current_user");
-      renderApp();
-    }
-
-    function renderApp() {
-      const joinBanner = document.getElementById("joinBanner");
-      const userDashboard = document.getElementById("userDashboard");
-      const userProfileHeader = document.getElementById("userProfileHeader");
-
-      if (currentUser) {
-        joinBanner.classList.add("hidden");
-        userDashboard.classList.remove("hidden");
-        userProfileHeader.classList.remove("hidden");
-        userProfileHeader.classList.add("flex");
-
-        document.getElementById("userName").innerText = currentUser.name;
-        document.getElementById("userAvatar").innerText = currentUser.name.charAt(0);
-        document.getElementById("myGoalTitle").innerText = currentUser.goal;
-        document.getElementById("streakText").innerText = `${currentUser.streak || 0} jour(s)`;
-        previewProgress(currentUser.progress || 0);
-        document.getElementById("overallSlider").value = currentUser.progress || 0;
-
-        const badge = document.getElementById("todayBadge");
-        const btnText = document.getElementById("markBtnText");
-        if (currentUser.worked_today) {
-          badge.className = "text-xs px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
-          badge.innerText = "🟢 Validé";
-          btnText.innerText = "Journée validée";
-        } else {
-          badge.className = "text-xs px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30";
-          badge.innerText = "Non validé";
-          btnText.innerText = "Marquer comme Travaillé";
-        }
-      } else {
-        joinBanner.classList.remove("hidden");
-        userDashboard.classList.add("hidden");
-        userProfileHeader.classList.add("hidden");
-      }
-    }
-
-    function renderMembers() {
-      document.getElementById("memberCount").innerText = `${members.length} membre(s)`;
-      const list = document.getElementById("membersList");
-      const notice = document.getElementById("emptyMembersNotice");
-
-      if (members.length === 0) {
-        list.innerHTML = "";
-        notice.classList.remove("hidden");
-        return;
-      }
-
-      notice.classList.add("hidden");
-      list.innerHTML = members.map(m => `
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between space-y-3">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2.5">
-              <div class="w-9 h-9 rounded-full bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold text-sm uppercase">
-                ${m.name.charAt(0)}
-              </div>
-              <div>
-                <h4 class="font-bold text-sm text-white">${m.name}</h4>
-                <p class="text-[11px] text-slate-400 truncate max-w-[150px]">${m.goal}</p>
-              </div>
-            </div>
-            ${m.worked_today ? '<span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-semibold">🟢 Actif</span>' : '<span class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full">En repos</span>'}
-          </div>
-
-          <div>
-            <div class="flex justify-between text-xs text-slate-400 mb-1">
-              <span>Progression</span>
-              <span class="font-bold text-emerald-400">${m.progress || 0}%</span>
-            </div>
-            <div class="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-800">
-              <div class="bg-emerald-500 h-full transition-all duration-300" style="width: ${m.progress || 0}%"></div>
-            </div>
-          </div>
-        </div>
-      `).join("");
-    }
-  </script>
+/* ---------- Démarrage ---------- */
+if(!sb){err({message:'Supabase non chargé : désactivez le bloqueur de publicités et rechargez.'})}
+else{
+  sb.auth.getSession().then(({data})=>{S.user=data.session?data.session.user:null;init()});
+  sb.auth.onAuthStateChange((ev,s)=>{
+    if(ev!=='SIGNED_IN'&&ev!=='SIGNED_OUT')return;
+    const u=s?s.user:null;
+    if((u&&u.id)!==(S.user&&S.user.id)){S.user=u;init()}
+  });
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)loadAll()});
+}
+</script>
 </body>
 </html>
