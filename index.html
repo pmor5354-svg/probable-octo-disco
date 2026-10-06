@@ -108,6 +108,24 @@
       <p class="text-[11px] text-slate-500">À cocher chaque jour, remises à zéro à minuit. Visibles par vous seul.</p></div>
     <div class="card"><div class="flex justify-between items-center"><span class="lbl">Classement</span><select id="sort" class="ghost" onchange="render()" aria-label="Trier par"><option value="xp">XP</option><option value="progress">Progression</option><option value="streak">Série</option></select></div>
       <div id="pod" class="grid grid-cols-3 gap-2 items-end"></div><div id="lb" class="space-y-2"></div></div>
+    <div class="flex gap-1.5 flex-wrap" role="tablist">
+      <button id="b-journal" class="ghost tb" onclick="tab('journal')">📓 Journal</button><button id="b-res" class="ghost tb" onclick="tab('res')">📚 Ressources</button><button id="b-wins" class="ghost tb" onclick="tab('wins')">🏆 Réalisations</button><button id="b-quiz" class="ghost tb" onclick="tab('quiz')">🧪 Test de niveau</button><button id="b-proj" class="ghost tb" onclick="tab('proj')">🚀 Projet de décembre</button>
+    </div>
+    <div id="t-journal" class="tp card"><span class="lbl">📓 Journal d'apprentissage (visible par tout le groupe)</span>
+      <form class="flex gap-2" onsubmit="addJ(event)"><input id="jnew" maxlength="300" required class="inp" placeholder="Aujourd'hui j'ai appris…" aria-label="Journal"><button class="btn">Publier</button></form>
+      <div id="jlist" class="space-y-2 max-h-96 overflow-y-auto"></div></div>
+    <div id="t-res" class="tp card hidden"><div class="flex justify-between items-center"><span class="lbl">📚 Bibliothèque de ressources</span><select id="rf" class="ghost" onchange="rRes()" aria-label="Filtrer par domaine"></select></div>
+      <form class="grid grid-cols-2 gap-2" onsubmit="addR(event)"><input id="rt" maxlength="100" required class="inp" placeholder="Titre" aria-label="Titre"><input id="ru" type="url" required class="inp" placeholder="https://…" aria-label="Lien"><select id="rd" class="inp" aria-label="Domaine"></select><button class="btn">Ajouter</button></form>
+      <div id="rlist" class="space-y-2"></div></div>
+    <div id="t-wins" class="tp card hidden"><span class="lbl">🏆 Mur des réalisations</span>
+      <form class="grid grid-cols-2 gap-2" onsubmit="addW(event)"><input id="wt" maxlength="100" required class="inp" placeholder="Ce que j'ai accompli" aria-label="Réalisation"><input id="wu" type="url" class="inp" placeholder="Lien de preuve (facultatif)" aria-label="Lien de preuve"><button class="btn col-span-2">Publier sur le mur</button></form>
+      <div id="wlist" class="grid sm:grid-cols-2 gap-2"></div></div>
+    <div id="t-quiz" class="tp card hidden"><span class="lbl">🧪 Test de niveau (auto-évaluation, visible par vous seul)</span>
+      <div class="flex gap-2"><select id="qd" class="inp" aria-label="Domaine du test"></select><button class="btn" onclick="startQ()">Passer le test</button></div>
+      <div id="qbody" class="space-y-3"></div><div id="qhist" class="text-xs text-slate-400 space-y-1"></div></div>
+    <div id="t-proj" class="tp card hidden"><span class="lbl">🚀 Projet commun de décembre</span>
+      <p class="text-sm text-slate-300">Objectif : lancer ensemble un petit commerce de quartier avec un dossier complet (application, plan de trésorerie, campagne marketing, analyse de données). Chacun apporte la compétence de son domaine. Choix du commerce avant le 30 novembre, assemblage du 14 au 27 décembre, démo finale le 28 décembre.</p>
+      <div id="prj" class="space-y-3"></div></div>
     <div class="card"><span class="lbl">Signalements & kudos</span><div id="feed" class="space-y-2 max-h-72 overflow-y-auto"></div></div>
     <div id="adm" class="hidden card">
       <span class="lbl">🛠 Admin</span>
@@ -121,7 +139,7 @@
 const SUPABASE_URL='https://eorzabxddxhxuepxmyrc.supabase.co';
 const SUPABASE_KEY='sb_publishable_z-cFf2q7MIErLOmXcY8z6A_cQLLf6Sj'; // clé publique uniquement
 const sb=window.supabase&&window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-const S={user:null,me:null,profiles:[],checks:[],objs:[],act:[],reacts:[],miss:[],mchk:[],ms:[]};
+const S={user:null,me:null,profiles:[],checks:[],objs:[],act:[],reacts:[],miss:[],mchk:[],ms:[],jr:[],rs:[],rv:[],wn:[],qz:[],pi:[]};
 let by={},ch=null,timer=null;
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -169,13 +187,18 @@ async function init(){
 async function loadAll(){
   if(!S.user)return;
   const since=ds(ago(90));
-  const [p,c,o,a,r,ms,mc,pl]=await Promise.all([
+  const [p,c,o,a,r,ms,mc,pl,jr,rs,rv,wn,qz,pi]=await Promise.all([
     sb.from('profiles').select('*').order('joined_at'),
     sb.from('checkins').select('*').gte('day',since),
     sb.from('objectives').select('*').eq('user_id',S.user.id).order('id'),
-    sb.from('activity').select('*').order('created_at',{ascending:false}).limit(30),sb.from('reactions').select('*'),sb.from('missions').select('*').order('id'),sb.from('mission_checks').select('*').gte('day',ds(ago(6))),sb.from('milestones').select('*').order('id')]);
-  const e=p.error||c.error||o.error||a.error||r.error||ms.error||mc.error||pl.error;if(e)return expired(e)?recover():err(e);
-  err(null);S.profiles=p.data;S.checks=c.data;S.objs=o.data;S.act=a.data;S.reacts=r.data;S.miss=ms.data;S.mchk=mc.data;S.ms=pl.data;
+    sb.from('activity').select('*').order('created_at',{ascending:false}).limit(30),sb.from('reactions').select('*'),sb.from('missions').select('*').order('id'),sb.from('mission_checks').select('*').gte('day',ds(ago(6))),sb.from('milestones').select('*').order('id'),
+    sb.from('journal').select('*').order('created_at',{ascending:false}).limit(40),
+    sb.from('resources').select('*'),sb.from('resource_votes').select('*'),
+    sb.from('wins').select('*').order('created_at',{ascending:false}).limit(40),
+    sb.from('quiz_results').select('*').order('created_at'),
+    sb.from('project_items').select('*').order('sort')]);
+  const e=p.error||c.error||o.error||a.error||r.error||ms.error||mc.error||pl.error||jr.error||rs.error||rv.error||wn.error||qz.error||pi.error;if(e)return expired(e)?recover():err(e);
+  err(null);S.profiles=p.data;S.checks=c.data;S.objs=o.data;S.act=a.data;S.reacts=r.data;S.miss=ms.data;S.mchk=mc.data;S.ms=pl.data;S.jr=jr.data;S.rs=rs.data;S.rv=rv.data;S.wn=wn.data;S.qz=qz.data;S.pi=pi.data;
   S.me=S.profiles.find(x=>x.id===S.user.id);if(!S.me)return init();
   by={};S.checks.forEach(r=>{(by[r.user_id]=by[r.user_id]||{})[r.day]=r.hours});
   render();
@@ -183,7 +206,7 @@ async function loadAll(){
 function listen(){
   if(ch)return;let t;const go=()=>{clearTimeout(t);t=setTimeout(loadAll,400)};
   ch=sb.channel('room');
-  ['profiles','checkins','objectives','activity','reactions','milestones'].forEach(tb=>ch.on('postgres_changes',{event:'*',schema:'public',table:tb},go));
+  ['profiles','checkins','objectives','activity','reactions','milestones','journal','resources','resource_votes','wins','project_items'].forEach(tb=>ch.on('postgres_changes',{event:'*',schema:'public',table:tb},go));
   ch.subscribe();
   if(!timer)timer=setInterval(()=>{if(!document.hidden)loadAll()},30000);
 }
@@ -269,7 +292,7 @@ function render(){
     ${p.id!==S.user.id&&p.s.m[k]===undefined&&new Date().getHours()>=20?`<button class="ghost" onclick="nudge('${p.id}')" aria-label="Relancer">👋</button>`:''}${n.is_admin&&p.id!==S.user.id?`<button class="ghost" onclick="rm('${p.id}')" aria-label="Retirer">✕</button>`:''}</div>`).join('');
 
   $('feed').innerHTML=S.act.map(a=>`<div class="bg-slate-950/70 border border-slate-800 border-l-2 ${FS[a.kind]||''} rounded-xl p-2 text-xs"><p class="text-slate-200">${esc(a.message)}</p><p class="text-[10px] text-slate-500">${new Date(a.created_at).toLocaleString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</p>${react(a)}</div>`).join('')||'<p class="text-xs text-slate-500">Rien pour l\'instant.</p>';
-  $('adm').classList.toggle('hidden',!n.is_admin);extras(my,k,n);missions(k);plan();
+  $('adm').classList.toggle('hidden',!n.is_admin);extras(my,k,n);missions(k);plan();community();
 }
 
 /* ---------- XP, réactions, focus, rappels ---------- */
@@ -351,6 +374,76 @@ async function tickP(id,done){const {error}=await sb.from('milestones').update({
 async function delP(id){const {error}=await sb.from('milestones').delete().eq('id',id);error?err(error):loadAll()}
 async function resetPlan(){if(confirm('Supprimer tout votre plan ?')){const {error}=await sb.from('milestones').delete().eq('user_id',S.user.id);error?err(error):loadAll()}}
 async function saveDeliv(v){const {error}=await sb.from('profiles').update({deliverable:v.trim().slice(0,200)}).eq('id',S.user.id);error?err(error):loadAll()}
+
+/* ---------- Communauté : journal, ressources, réalisations, test, projet ---------- */
+const DOM={code:'Vibe coding',finance:'Finance',marketing:'Marketing',data:'Data',anglais:'Anglais'};
+const opt=(o,all)=>(all?'<option value="">Tous les domaines</option>':'')+Object.entries(o).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
+$('rf').innerHTML=opt({...DOM,autre:'Autre'},1);$('rd').innerHTML=opt({...DOM,autre:'Autre'});$('qd').innerHTML=opt(DOM);
+const fmt=d=>new Date(d).toLocaleDateString('fr-FR',{day:'2-digit',month:'short'});
+const safe=u=>/^https?:\/\//i.test(u||'')?u:'';
+const link=(u,t)=>safe(u)?`<a class="text-emerald-400 underline break-words" href="${esc(u)}" target="_blank" rel="noopener noreferrer">${t}</a>`:'';
+function tab(n){
+  document.querySelectorAll('.tp').forEach(e=>e.classList.toggle('hidden',e.id!=='t-'+n));
+  document.querySelectorAll('.tb').forEach(b=>b.classList.toggle('ring-2',b.id==='b-'+n));
+  document.querySelectorAll('.tb').forEach(b=>b.classList.toggle('ring-emerald-500',b.id==='b-'+n));
+}
+function community(){rJ();rRes();rW();rQ();rX()}
+
+async function addJ(e){
+  e.preventDefault();const text=$('jnew').value.trim();if(!text)return;
+  const {error}=await sb.from('journal').insert({text,member_name:S.me.name});if(error)return err(error);$('jnew').value='';loadAll();
+}
+const rJ=()=>$('jlist').innerHTML=S.jr.map(j=>`<div class="bg-slate-950/70 border border-slate-800 rounded-xl p-2 text-sm"><p class="text-[11px] text-slate-500"><b class="text-slate-300">${esc(j.member_name)}</b> · ${fmt(j.created_at)}</p><p>${esc(j.text)}</p></div>`).join('')||'<p class="text-xs text-slate-500">Aucune entrée pour l\'instant : écrivez ce que vous avez appris aujourd\'hui.</p>';
+
+async function addR(e){
+  e.preventDefault();const url=$('ru').value.trim();if(!safe(url))return err({message:'Lien invalide : il doit commencer par http ou https.'});
+  const {error}=await sb.from('resources').insert({title:$('rt').value.trim(),url,domain:$('rd').value,member_name:S.me.name});
+  if(error)return err(error);$('rt').value=$('ru').value='';loadAll();
+}
+async function vote(id,on){
+  const {error}=await(on?sb.from('resource_votes').delete().eq('resource_id',id).eq('user_id',S.user.id):sb.from('resource_votes').insert({resource_id:id}));
+  error?err(error):loadAll();
+}
+function rRes(){
+  const f=$('rf').value;
+  $('rlist').innerHTML=S.rs.filter(r=>!f||r.domain===f).map(r=>({...r,v:S.rv.filter(x=>x.resource_id===r.id)})).sort((a,b)=>b.v.length-a.v.length)
+    .map(r=>{const mine=r.v.some(x=>x.user_id===S.user.id);
+      return `<div class="flex items-center gap-2 bg-slate-950/70 border border-slate-800 rounded-xl p-2"><div class="flex-1 min-w-0"><p class="text-sm font-bold">${link(r.url,esc(r.title))||esc(r.title)}</p><p class="text-[11px] text-slate-500">${esc(DOM[r.domain]||'Autre')} · ${esc(r.member_name)}</p></div><button onclick="vote(${r.id},${mine})" class="ghost ${mine?'ring-1 ring-emerald-500':''}" aria-label="Voter">👍 ${r.v.length}</button></div>`}).join('')
+    ||'<p class="text-xs text-slate-500">Aucune ressource : ajoutez la première !</p>';
+}
+
+async function addW(e){
+  e.preventDefault();const title=$('wt').value.trim(),url=$('wu').value.trim();
+  if(url&&!safe(url))return err({message:'Lien invalide : il doit commencer par http ou https.'});
+  const {error}=await sb.from('wins').insert({title,url:url||null,member_name:S.me.name});if(error)return err(error);
+  $('wt').value=$('wu').value='';post('kudos',`🏆 ${S.me.name} a ajouté une réalisation : ${title}`);
+}
+const rW=()=>$('wlist').innerHTML=S.wn.map(w=>`<div class="bg-slate-950/70 border border-amber-500/30 rounded-xl p-3"><p class="text-sm font-bold">🏆 ${esc(w.title)}</p><p class="text-[11px] text-slate-500">${esc(w.member_name)} · ${fmt(w.created_at)}</p>${link(w.url,'Voir la preuve')}</div>`).join('')||'<p class="text-xs text-slate-500">Le mur est vide : ajoutez votre première réalisation !</p>';
+
+const Q={
+code:[["Que fait une base de données dans une application ?",["Elle affiche les boutons","Elle conserve les données de façon durable","Elle accélère l'écran"],1],["Que signifie « déployer » une application ?",["La supprimer","La mettre en ligne pour les utilisateurs","La copier sur une clé USB"],1],["Pourquoi relire le code généré par une IA ?",["C'est inutile","Pour le comprendre et repérer les erreurs","Pour le rendre plus long"],1],["À quoi sert Git ?",["À garder l'historique des versions du code","À compresser des images","À envoyer des e-mails"],0]],
+finance:[["Le bilan montre…",["Les ventes du mois seulement","Ce que l'entreprise possède et doit à une date donnée","Le nombre de clients"],1],["Le seuil de rentabilité est…",["Le chiffre d'affaires où le résultat est nul","Le prix le plus bas possible","Le salaire minimum"],0],["Un plan de trésorerie sert à…",["Prévoir les entrées et sorties d'argent","Calculer les impôts","Choisir un logo"],0],["Le besoin en fonds de roulement correspond à…",["Stocks + créances − dettes d'exploitation","Le capital de départ","Les amortissements"],0]],
+marketing:[["Une « cible » est…",["Le groupe de clients visé en priorité","Le budget publicitaire","Le slogan"],0],["Une proposition de valeur explique…",["Pourquoi le client choisit votre offre","La liste des prix","Votre organigramme"],0],["La portée d'une publication, c'est…",["Le nombre de personnes qui l'ont vue","Le nombre de lettres","Le prix payé"],0],["Pour tester un message, on…",["Le publie partout sans mesurer","Le teste sur un petit échantillon et on compare","Attend un an"],1]],
+data:[["Un tableau croisé dynamique…",["Résume des données par catégories","Efface les doublons","Crée un site web"],0],["En SQL, SELECT sert à…",["Lire des données","Supprimer une base","Envoyer un message"],0],["Nettoyer des données, c'est…",["Corriger erreurs, doublons et valeurs manquantes","Imprimer le fichier","Changer les couleurs"],0],["Un bon graphique doit…",["Être le plus coloré possible","Rendre le message clair en un coup d'œil","Contenir tous les chiffres"],1]],
+anglais:[["Choisissez la phrase correcte :",["She go to school","She goes to school","She going to school"],1],["« I ___ to Dakar last week. »",["go","went","gone"],1],["Que signifie « deadline » ?",["Une date limite","Un cadeau","Un salaire"],0],["Comment se présenter ?",["My name is Awa and I study finance","I am name Awa finance","Me Awa student"],0]]};
+function startQ(){
+  $('qbody').innerHTML=Q[$('qd').value].map((q,i)=>`<fieldset class="space-y-1"><legend class="text-sm font-bold">${i+1}. ${esc(q[0])}</legend>${q[1].map((o,j)=>`<label class="flex gap-2 text-sm"><input type="radio" name="q${i}" value="${j}">${esc(o)}</label>`).join('')}</fieldset>`).join('')+'<button class="btn" onclick="sendQ()">Valider mes réponses</button>';
+}
+async function sendQ(){
+  const d=$('qd').value;let sc=0;
+  Q[d].forEach((q,i)=>{const c=document.querySelector(`input[name=q${i}]:checked`);if(c&&+c.value===q[2])sc++});
+  const {error}=await sb.from('quiz_results').insert({domain:d,score:sc,total:Q[d].length});if(error)return err(error);
+  $('qbody').innerHTML=`<p class="text-lg font-bold text-emerald-400">Score : ${sc}/${Q[d].length}</p>`;loadAll();
+}
+const rQ=()=>$('qhist').innerHTML=Object.keys(DOM).map(d=>{const L=S.qz.filter(x=>x.domain===d);if(!L.length)return'';const a=L[0],b=L[L.length-1];
+  return `<p>${DOM[d]} : début ${a.score}/${a.total}${L.length>1?` → dernier ${b.score}/${b.total} (${L.length} essais)`:''}</p>`}).join('')||'<p>Aucun test passé : faites-le maintenant pour mesurer votre point de départ, puis refaites-le en décembre.</p>';
+
+async function tickX(id,done){const {error}=await sb.from('project_items').update({done}).eq('id',id);error?err(error):loadAll()}
+function rX(){
+  const g={};S.pi.forEach(x=>(g[x.role]=g[x.role]||[]).push(x));
+  $('prj').innerHTML=Object.entries(g).map(([r,L])=>`<div class="bg-slate-950/60 border border-slate-800 rounded-xl p-3 space-y-1.5"><p class="text-sm font-bold text-emerald-400">${esc(r)}</p>${L.map(x=>x.kind==='desc'?`<p class="text-xs text-slate-300">${esc(x.text)}</p>`:`<label class="flex items-center gap-2 text-sm"><input type="checkbox" ${x.done?'checked':''} onchange="tickX(${x.id},this.checked)"><span class="${x.done?'line-through text-slate-500':''}">${esc(x.text)}</span></label>`).join('')}</div>`).join('')||'<p class="text-xs text-slate-500">Plan du projet non chargé : exécutez le script SQL communauté.</p>';
+}
+tab('journal');
 
 /* ---------- Missions personnalisées ---------- */
 function missions(k){
