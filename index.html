@@ -34,6 +34,7 @@
     <input id="em" type="email" class="inp" placeholder="E-mail" autocomplete="email" aria-label="E-mail">
     <input id="pw" type="password" class="inp" placeholder="Mot de passe (6 caractères min.)" autocomplete="current-password" aria-label="Mot de passe">
     <div class="flex gap-2"><button class="btn flex-1" onclick="auth('in')">Se connecter</button><button class="ghost flex-1" onclick="auth('up')">Créer un compte</button></div>
+    <button class="text-xs text-slate-400 underline" onclick="forgot()">Mot de passe oublié ?</button>
   </section>
 
   <form id="onboard" class="hidden card max-w-md mx-auto" onsubmit="saveProfile(event)">
@@ -41,6 +42,12 @@
     <input id="nm" required maxlength="40" class="inp" placeholder="Nom / pseudo" aria-label="Nom">
     <input id="gl" required maxlength="80" class="inp" placeholder="Objectif (ex: Audit, Dev Web)" aria-label="Objectif">
     <button class="btn w-full">Rejoindre le groupe</button>
+  </form>
+
+  <form id="reset" class="hidden card max-w-md mx-auto" onsubmit="setNewPw(event)">
+    <h2 class="text-xl font-extrabold text-white">Nouveau mot de passe</h2>
+    <input id="np" type="password" minlength="6" required class="inp" placeholder="Nouveau mot de passe (6 caractères min.)" autocomplete="new-password" aria-label="Nouveau mot de passe">
+    <button class="btn w-full">Enregistrer</button>
   </form>
 
   <div id="app" class="hidden space-y-4">
@@ -87,6 +94,14 @@
         <div class="flex gap-2"><select id="dur" class="inp w-24" aria-label="Durée" onchange="if(!pt)$('clock').textContent=this.value+':00'"><option value="25">25 min</option><option value="50">50 min</option></select><button id="pbtn" class="btn flex-1" onclick="pomo()">Démarrer</button></div>
         <p class="text-[11px] text-slate-500">À la fin de la session, la journée est validée automatiquement.</p><button class="ghost" onclick="remind()">🔔 Rappel à 20 h</button></div>
     </div>
+    <div class="card"><div class="flex justify-between items-center"><span class="lbl">🗺️ Mon plan jusqu'en janvier</span><b id="plpct" class="text-xs text-emerald-400"></b></div>
+      <p id="plhead" class="text-sm font-bold"></p>
+      <div class="h-2 bg-slate-950 border border-slate-800 rounded-full overflow-hidden"><div id="plbar" class="h-full bg-emerald-500 transition-all" style="width:0"></div></div>
+      <input id="deliv" maxlength="200" class="inp" placeholder="Mon livrable de janvier (une phrase)" aria-label="Livrable de janvier" onchange="saveDeliv(this.value)">
+      <div id="pltpl" class="flex gap-2"><select id="pdom" class="inp" aria-label="Domaine"><option value="code">Vibe coding</option><option value="finance">Finance / comptabilité / trésorerie</option><option value="marketing">Marketing</option><option value="data">Data analyst + anglais</option></select><button class="btn" onclick="loadPlan()">Charger</button></div>
+      <div id="plist" class="space-y-2"></div>
+      <form id="padd" class="hidden flex gap-2" onsubmit="addP(event)"><input id="pnew" maxlength="100" class="inp" placeholder="Ajouter une étape au sprint en cours" aria-label="Nouvelle étape"><button class="btn">+</button></form>
+      <button class="text-[11px] text-slate-500 underline" onclick="resetPlan()">Réinitialiser mon plan</button></div>
     <div class="card"><div class="flex justify-between items-center"><span class="lbl">✅ Mes missions du jour</span><b id="mcount" class="text-xs text-emerald-400"></b></div>
       <div id="miss" class="space-y-2"></div>
       <form class="flex gap-2" onsubmit="addMission(event)"><input id="mnew" maxlength="80" class="inp" placeholder="Nouvelle mission (ex : Lire 20 pages d'un livre)" aria-label="Nouvelle mission"><button class="btn">+</button></form>
@@ -106,7 +121,7 @@
 const SUPABASE_URL='https://eorzabxddxhxuepxmyrc.supabase.co';
 const SUPABASE_KEY='sb_publishable_z-cFf2q7MIErLOmXcY8z6A_cQLLf6Sj'; // clé publique uniquement
 const sb=window.supabase&&window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-const S={user:null,me:null,profiles:[],checks:[],objs:[],act:[],reacts:[],miss:[],mchk:[]};
+const S={user:null,me:null,profiles:[],checks:[],objs:[],act:[],reacts:[],miss:[],mchk:[],ms:[]};
 let by={},ch=null,timer=null;
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -140,7 +155,8 @@ async function saveProfile(e){
   init();
 }
 async function init(){
-  ['auth','onboard','app'].forEach(v=>$(v).classList.add('hidden'));
+  ['auth','onboard','app','reset'].forEach(v=>$(v).classList.add('hidden'));
+  if(recov){$('reset').classList.remove('hidden');return}
   $('bar').classList.toggle('hidden',!S.user);$('bar').classList.toggle('flex',!!S.user);
   if(!S.user)return $('auth').classList.remove('hidden');
   const {data,error}=await sb.from('profiles').select('id').eq('id',S.user.id).maybeSingle();
@@ -153,13 +169,13 @@ async function init(){
 async function loadAll(){
   if(!S.user)return;
   const since=ds(ago(90));
-  const [p,c,o,a,r,ms,mc]=await Promise.all([
+  const [p,c,o,a,r,ms,mc,pl]=await Promise.all([
     sb.from('profiles').select('*').order('joined_at'),
     sb.from('checkins').select('*').gte('day',since),
     sb.from('objectives').select('*').eq('user_id',S.user.id).order('id'),
-    sb.from('activity').select('*').order('created_at',{ascending:false}).limit(30),sb.from('reactions').select('*'),sb.from('missions').select('*').order('id'),sb.from('mission_checks').select('*').gte('day',ds(ago(6)))]);
-  const e=p.error||c.error||o.error||a.error||r.error||ms.error||mc.error;if(e)return expired(e)?recover():err(e);
-  err(null);S.profiles=p.data;S.checks=c.data;S.objs=o.data;S.act=a.data;S.reacts=r.data;S.miss=ms.data;S.mchk=mc.data;
+    sb.from('activity').select('*').order('created_at',{ascending:false}).limit(30),sb.from('reactions').select('*'),sb.from('missions').select('*').order('id'),sb.from('mission_checks').select('*').gte('day',ds(ago(6))),sb.from('milestones').select('*').order('id')]);
+  const e=p.error||c.error||o.error||a.error||r.error||ms.error||mc.error||pl.error;if(e)return expired(e)?recover():err(e);
+  err(null);S.profiles=p.data;S.checks=c.data;S.objs=o.data;S.act=a.data;S.reacts=r.data;S.miss=ms.data;S.mchk=mc.data;S.ms=pl.data;
   S.me=S.profiles.find(x=>x.id===S.user.id);if(!S.me)return init();
   by={};S.checks.forEach(r=>{(by[r.user_id]=by[r.user_id]||{})[r.day]=r.hours});
   render();
@@ -167,7 +183,7 @@ async function loadAll(){
 function listen(){
   if(ch)return;let t;const go=()=>{clearTimeout(t);t=setTimeout(loadAll,400)};
   ch=sb.channel('room');
-  ['profiles','checkins','objectives','activity','reactions'].forEach(tb=>ch.on('postgres_changes',{event:'*',schema:'public',table:tb},go));
+  ['profiles','checkins','objectives','activity','reactions','milestones'].forEach(tb=>ch.on('postgres_changes',{event:'*',schema:'public',table:tb},go));
   ch.subscribe();
   if(!timer)timer=setInterval(()=>{if(!document.hidden)loadAll()},30000);
 }
@@ -247,13 +263,13 @@ function render(){
   $('pod').innerHTML=[1,0,2].map(j=>rows[j]?`<div class="text-center"><p class="text-lg">${['🥇','🥈','🥉'][j]}</p><p class="text-xs font-bold truncate">${esc(rows[j].name)}</p><div class="${['h-20 bg-amber-500/30','h-14 bg-slate-500/30','h-10 bg-orange-700/30'][j]} rounded-t-xl flex items-center justify-center text-sm font-bold">${val(rows[j])}${key==='progress'?'%':''}</div></div>`:'<div></div>').join('');
   $('lb').innerHTML=rows.map((p,j)=>`<div class="flex items-center gap-3 p-2 rounded-xl border ${p.id===S.user.id?'bg-emerald-950/30 border-emerald-500/30':'bg-slate-950/60 border-slate-800'}">
     <span class="w-6 text-center text-sm">${['🥇','🥈','🥉'][j]||j+1}</span>
-    <div class="flex-1 min-w-0"><p class="text-sm font-bold truncate">${esc(p.name)}</p><p class="text-[11px] text-slate-400 truncate">${esc(p.goal)}</p>
+    <div class="flex-1 min-w-0"><p class="text-sm font-bold truncate">${esc(p.name)}</p><p class="text-[11px] text-slate-400 truncate">${esc(p.goal)}${pp(p.id)}</p>
     <div class="h-1.5 bg-slate-800 rounded-full mt-1"><div class="h-full bg-emerald-500 rounded-full" style="width:${+p.progress||0}%"></div></div></div>
     <div class="text-right text-[11px] text-slate-400"><b class="text-emerald-400 text-sm">${p.s.xp} XP</b><br>${p.s.week}/7 j · 🔥${p.s.streak}</div>
     ${p.id!==S.user.id&&p.s.m[k]===undefined&&new Date().getHours()>=20?`<button class="ghost" onclick="nudge('${p.id}')" aria-label="Relancer">👋</button>`:''}${n.is_admin&&p.id!==S.user.id?`<button class="ghost" onclick="rm('${p.id}')" aria-label="Retirer">✕</button>`:''}</div>`).join('');
 
   $('feed').innerHTML=S.act.map(a=>`<div class="bg-slate-950/70 border border-slate-800 border-l-2 ${FS[a.kind]||''} rounded-xl p-2 text-xs"><p class="text-slate-200">${esc(a.message)}</p><p class="text-[10px] text-slate-500">${new Date(a.created_at).toLocaleString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</p>${react(a)}</div>`).join('')||'<p class="text-xs text-slate-500">Rien pour l\'instant.</p>';
-  $('adm').classList.toggle('hidden',!n.is_admin);extras(my,k,n);missions(k);
+  $('adm').classList.toggle('hidden',!n.is_admin);extras(my,k,n);missions(k);plan();
 }
 
 /* ---------- XP, réactions, focus, rappels ---------- */
@@ -303,6 +319,39 @@ setInterval(()=>{ // rappel local à 20 h (fonctionne quand l'appli est ouverte)
 },60000);
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
 
+/* ---------- Plan jusqu'en janvier ---------- */
+const START=new Date(2026,9,5); // début du sprint 1 : 5 octobre 2026 (6 sprints de 14 jours)
+const T={
+code:[["Choisir 3 projets et les décrire en 3 lignes","Déployer le projet n°1 (lien en ligne)"],["Ajouter une base de données au projet 2","Relire et comprendre le code généré par l'IA"],["Terminer et déployer le projet 2","Présenter une démo de 10 min au groupe"],["Concevoir le projet 3 (utile à un membre du groupe)","Construire la version 1 du projet 3"],["Ajouter connexion et sécurité de base","Recueillir 3 retours d'utilisateurs"],["Finaliser et déployer le projet 3","Rédiger le portfolio avec les 3 liens"]],
+finance:[["Revoir bilan et compte de résultat (SYSCOHADA)","Construire un tableau de trésorerie mensuel"],["Calculer 3 ratios sur une PME (liquidité, rentabilité, endettement)","Maîtriser 10 formules Excel clés"],["Construire le budget de trésorerie sur 12 mois","Tester 2 scénarios (ventes en hausse et en baisse)"],["Calculer le besoin en fonds de roulement","Rédiger la note d'analyse de la PME"],["Compléter le plan de trésorerie et ses hypothèses","Présenter au groupe et noter les critiques"],["Finaliser le dossier (plan + analyse)","Préparer un résumé d'une page"]],
+marketing:[["Définir une cible précise et son problème principal","Analyser 3 concurrents locaux (offre, prix, communication)"],["Rédiger la proposition de valeur et le message clé","Publier 3 contenus de test"],["Construire le calendrier de 12 publications","Mesurer portée et réactions des tests"],["Établir le budget en FCFA par canal","Produire 6 contenus"],["Lancer la campagne pendant 7 jours","Relever les résultats chiffrés"],["Rédiger le bilan et les enseignements","Assembler le dossier de campagne final"]],
+data:[["Apprendre Excel avancé (tableaux croisés, recherche)","Faire 6 sessions de 15 min d'anglais parlé"],["Apprendre les bases de SQL (filtres, regroupements)","Choisir un jeu de données sur un sujet local"],["Nettoyer et documenter les données","Se présenter en anglais pendant 2 min"],["Analyser et produire 5 graphiques","Écrire 10 phrases en anglais sur le projet"],["Construire le tableau de bord final","Présenter le projet en anglais (5 min)"],["Publier le projet avec ses conclusions","Passer le test oral d'anglais avec le groupe"]]};
+const dayN=()=>{const n=new Date();return Math.floor((new Date(n.getFullYear(),n.getMonth(),n.getDate())-START)/864e5)};
+const sprintNo=()=>Math.min(7,Math.max(1,Math.floor(dayN()/14)+1));
+const pp=id=>{const L=S.ms.filter(m=>m.user_id===id);return L.length?' · plan '+Math.round(L.filter(m=>m.done).length/L.length*100)+'%':''};
+function plan(){
+  const mine=S.ms.filter(m=>m.user_id===S.user.id),cur=sprintNo(),done=mine.filter(m=>m.done).length,pct=mine.length?Math.round(done/mine.length*100):0;
+  $('plhead').textContent=cur>6?'Marge de fin de parcours (28 déc. – 1er janv.)':`Sprint ${cur}/6 · ${Math.max(1,14-Math.max(0,dayN())%14)} jour(s) restant(s)`;
+  $('plpct').textContent=mine.length?pct+'%':'';$('plbar').style.width=pct+'%';
+  if(document.activeElement!==$('deliv'))$('deliv').value=S.me.deliverable||'';
+  $('pltpl').classList.toggle('hidden',mine.length>0);$('padd').classList.toggle('hidden',!mine.length);
+  $('plist').innerHTML=mine.length?[1,2,3,4,5,6].map(n=>{const L=mine.filter(m=>m.sprint===n);
+    return `<details ${n===cur?'open':''}><summary class="text-sm font-bold cursor-pointer ${n===cur?'text-emerald-400':'text-slate-300'}">Sprint ${n} <span class="text-[11px] font-normal text-slate-500">${L.filter(m=>m.done).length}/${L.length}</span></summary><div class="space-y-1.5 mt-1.5">${L.map(m=>`<div class="flex items-center gap-2"><button onclick="tickP(${m.id},${!m.done})" aria-label="Cocher">${m.done?'✅':'⬜'}</button><span class="flex-1 text-sm ${m.done?'line-through text-slate-500':''}">${esc(m.text)}</span><button class="text-slate-500" onclick="delP(${m.id})" aria-label="Supprimer">✕</button></div>`).join('')}</div></details>`}).join(''):'';
+}
+async function loadPlan(){
+  const t=T[$('pdom').value];if(!t)return;const rows=[];
+  t.forEach((L,i)=>L.forEach(text=>rows.push({sprint:i+1,text})));
+  const {error}=await sb.from('milestones').insert(rows);error?err(error):loadAll();
+}
+async function addP(e){
+  e.preventDefault();const text=$('pnew').value.trim();if(!text)return;
+  const {error}=await sb.from('milestones').insert({sprint:Math.min(6,sprintNo()),text});if(error)return err(error);$('pnew').value='';loadAll();
+}
+async function tickP(id,done){const {error}=await sb.from('milestones').update({done}).eq('id',id);error?err(error):loadAll()}
+async function delP(id){const {error}=await sb.from('milestones').delete().eq('id',id);error?err(error):loadAll()}
+async function resetPlan(){if(confirm('Supprimer tout votre plan ?')){const {error}=await sb.from('milestones').delete().eq('user_id',S.user.id);error?err(error):loadAll()}}
+async function saveDeliv(v){const {error}=await sb.from('profiles').update({deliverable:v.trim().slice(0,200)}).eq('id',S.user.id);error?err(error):loadAll()}
+
 /* ---------- Missions personnalisées ---------- */
 function missions(k){
   const M=S.miss,on=new Set(S.mchk.filter(c=>c.day===k).map(c=>c.mission_id));
@@ -322,6 +371,21 @@ async function addMission(e){
 }
 async function delM(id){if(confirm('Supprimer cette mission ?')){const {error}=await sb.from('missions').delete().eq('id',id);error?err(error):loadAll()}}
 
+/* ---------- Mot de passe oublié ---------- */
+let recov=false;
+async function forgot(){
+  const email=$('em').value.trim();
+  if(!email)return err({message:"Saisissez d'abord votre e-mail dans le champ ci-dessus."});
+  const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
+  err({message:error?error.message:'E-mail envoyé : ouvrez le lien reçu pour choisir un nouveau mot de passe.'});
+}
+async function setNewPw(e){
+  e.preventDefault();
+  const {error}=await sb.auth.updateUser({password:$('np').value});
+  if(error)return err(error);
+  recov=false;err(null);history.replaceState(null,'',location.pathname);init();
+}
+
 /* ---------- Session expirée ---------- */
 const expired=e=>/jwt expired|PGRST301|invalid jwt/i.test((e&&(e.message||e.code))||'');
 let recovering=false;
@@ -338,6 +402,7 @@ if(!sb){err({message:'Supabase non chargé : désactivez le bloqueur de publicit
 else{
   sb.auth.getSession().then(({data})=>{S.user=data.session?data.session.user:null;init()});
   sb.auth.onAuthStateChange((ev,s)=>{
+    if(ev==='PASSWORD_RECOVERY'){recov=true;S.user=s?s.user:null;return init()}
     if(ev!=='SIGNED_IN'&&ev!=='SIGNED_OUT')return;
     const u=s?s.user:null;
     if((u&&u.id)!==(S.user&&S.user.id)){S.user=u;init()}
